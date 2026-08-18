@@ -100,7 +100,8 @@ def main():
                 print("3. This Week")
                 print("4. This Month")
                 print("5. Category Summary")
-                print("6. Back")
+                print("6. Spending Statistics")
+                print("7. Back")
                 print("================================")
                 report_choice = input("Enter choice: ")
                 if report_choice == "1":
@@ -158,6 +159,19 @@ def main():
                         for category, total in summary.items():
                             print(f"{category} {total:.2f}")
                 elif report_choice == "6":
+                    expenses = report_service.this_month()
+                    statistics = report_service.spending_statistics(expenses)
+                    if statistics["count"] == 0:
+                        print("No expenses found this month.")
+                    else:
+                        print("Spending Statistics")
+                        print("--------------------")
+                        print(f"Number of Expenses: {statistics['count']}")
+                        print(f"Total Spending: {statistics['total']:.2f}")
+                        print(f"Average Expense: {statistics['average']:.2f}")
+                        print(f"Highest Expense: {statistics['highest']:.2f}")
+                        print(f"Lowest Expense: {statistics['lowest']:.2f}")
+                elif report_choice == "7":
                     break
                 else:
                     print("Invalid choice.")

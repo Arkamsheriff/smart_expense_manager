@@ -54,3 +54,22 @@ class ReportService:
             summary[expense.category] += expense.amount
 
         return summary
+    def spending_statistics(self, expenses):
+        if not expenses:
+            return {
+                "count": 0,
+                "total": 0.0,
+                "average": 0.0,
+                "highest": 0.0,
+                "lowest": 0.0
+            }
+
+        amounts = [expense.amount for expense in expenses]
+
+        return {
+            "count": len(amounts),
+            "total": sum(amounts),
+            "average": sum(amounts) / len(amounts),
+            "highest": max(amounts),
+            "lowest": min(amounts)
+        }

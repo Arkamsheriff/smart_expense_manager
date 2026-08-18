@@ -122,3 +122,25 @@ def test_category_summary():
     assert summary["Food"] == 350.75
     assert summary["Housing"] == 500.00
     assert summary["Transport"] == 100.00
+
+def test_spending_statistics():
+    class FakeExpense:
+        def __init__(self, amount):
+            self.amount = amount
+
+    expenses = [
+        FakeExpense(100.00),
+        FakeExpense(200.00),
+        FakeExpense(50.00),
+        FakeExpense(150.00)
+    ]
+
+    report = ReportService(None)
+
+    statistics = report.spending_statistics(expenses)
+
+    assert statistics["count"] == 4
+    assert statistics["total"] == 500.00
+    assert statistics["average"] == 125.00
+    assert statistics["highest"] == 200.00
+    assert statistics["lowest"] == 50.00
