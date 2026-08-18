@@ -101,3 +101,24 @@ def test_this_month(tmp_path, monkeypatch):
 
     assert len(expenses) == 1
     assert expenses[0].id == expense.id
+
+def test_category_summary():
+    class FakeExpense:
+        def __init__(self, category, amount):
+            self.category = category
+            self.amount = amount
+
+    expenses = [
+        FakeExpense("Food", 200.00),
+        FakeExpense("Food", 150.75),
+        FakeExpense("Housing", 500.00),
+        FakeExpense("Transport", 100.00)
+    ]
+
+    report = ReportService(None)
+
+    summary = report.category_summary(expenses)
+
+    assert summary["Food"] == 350.75
+    assert summary["Housing"] == 500.00
+    assert summary["Transport"] == 100.00

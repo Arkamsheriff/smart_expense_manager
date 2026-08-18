@@ -44,3 +44,13 @@ class ReportService:
                 and expense.created_at.month == today.month
             )
         ]
+    def category_summary(self, expenses):
+        summary = {}
+
+        for expense in expenses:
+            if expense.category not in summary:
+                summary[expense.category] = 0
+
+            summary[expense.category] += expense.amount
+
+        return summary

@@ -99,14 +99,12 @@ def main():
                 print("2. Today's Total")
                 print("3. This Week")
                 print("4. This Month")
-                print("5. Back")
+                print("5. Category Summary")
+                print("6. Back")
                 print("================================")
-
                 report_choice = input("Enter choice: ")
-
                 if report_choice == "1":
                     expenses = report_service.today()
-
                     if not expenses:
                         print("No expenses found for today.")
                     else:
@@ -118,17 +116,12 @@ def main():
                                 f"{expense.category} "
                                 f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
                             )
-
                 elif report_choice == "2":
                     expenses = report_service.today()
-
                     total = report_service.total_for_expenses(expenses)
-
                     print(f"{total:.2f}")
-
                 elif report_choice == "3":
                     expenses = report_service.this_week()
-
                     if not expenses:
                         print("No expenses found this week.")
                     else:
@@ -140,10 +133,8 @@ def main():
                                 f"{expense.category} "
                                 f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
                             )
-
                 elif report_choice == "4":
                     expenses = report_service.this_month()
-
                     if not expenses:
                         print("No expenses found this month.")
                     else:
@@ -157,14 +148,22 @@ def main():
                             )
 
                 elif report_choice == "5":
+                    expenses = report_service.this_month()
+                    summary = report_service.category_summary(expenses)
+                    if not summary:
+                        print("No expenses found this month.")
+                    else:
+                        print("Category Summary")
+                        print("----------------")
+                        for category, total in summary.items():
+                            print(f"{category} {total:.2f}")
+                elif report_choice == "6":
                     break
-
                 else:
                     print("Invalid choice.")
         elif choice == "8":
             print("Exiting Smart Expense Manager...")
             break
-
         else:
             print("Invalid choice. Please try again.")
 
