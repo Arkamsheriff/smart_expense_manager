@@ -1,8 +1,23 @@
 from app.expense_manager import ExpenseManager
 
 
-def test_add_expense():
-    manager = ExpenseManager()
+def create_manager(tmp_path, monkeypatch):
+    database_path = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(database_path)
+    )
+
+    from app.database.repository import initialize_database
+
+    initialize_database()
+
+    return ExpenseManager()
+
+
+def test_add_expense(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
 
     expense = manager.add_expense(
         "Rent",
@@ -16,8 +31,8 @@ def test_add_expense():
     assert expense.category == "Housing"
 
 
-def test_expense_id_increments():
-    manager = ExpenseManager()
+def test_expense_id_increments(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
 
     expense1 = manager.add_expense(
         "Rent",
@@ -35,44 +50,86 @@ def test_expense_id_increments():
     assert expense2.id == 2
 
 
-def test_total_expenses():
-    manager = ExpenseManager()
+def test_total_expenses(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
 
-    manager.add_expense("Rent", 500.00, "Housing")
-    manager.add_expense("Food", 150.75, "Food")
+    manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    manager.add_expense(
+        "Food",
+        150.75,
+        "Food"
+    )
 
     assert manager.total_expenses() == 650.75
 
 
-def test_category_total():
-    manager = ExpenseManager()
+def test_category_total(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
 
-    manager.add_expense("Rent", 500.00, "Housing")
-    manager.add_expense("Groceries", 150.75, "Food")
-    manager.add_expense("Restaurant", 100.00, "Food")
+    manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    manager.add_expense(
+        "Groceries",
+        150.75,
+        "Food"
+    )
+
+    manager.add_expense(
+        "Restaurant",
+        100.00,
+        "Food"
+    )
 
     assert manager.category_total("Food") == 250.75
 
 
-def test_delete_expense():
-    manager = ExpenseManager()
+def test_delete_expense(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
 
-    manager.add_expense("Rent", 500.00, "Housing")
-    manager.add_expense("Food", 150.00, "Food")
+    manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    manager.add_expense(
+        "Food",
+        150.00,
+        "Food"
+    )
 
     result = manager.delete_expense(1)
 
     assert result is True
-    assert len(manager.expenses) == 1
-    assert manager.expenses[0].id == 2
+
+    expenses = manager.list_expenses()
+
+    assert len(expenses) == 1
+    assert expenses[0].id == 2
 
 
-def test_delete_nonexistent_expense():
-    manager = ExpenseManager()
+def test_delete_nonexistent_expense(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
 
-    manager.add_expense("Rent", 500.00, "Housing")
+    manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
 
     result = manager.delete_expense(99)
 
     assert result is False
-    assert len(manager.expenses) == 1
+
+    expenses = manager.list_expenses()
+
+    assert len(expenses) == 1

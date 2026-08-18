@@ -1,4 +1,5 @@
 from app.expense_manager import ExpenseManager
+from app.database.repository import initialize_database
 from app.validators import (
     get_non_empty_input,
     get_positive_amount,
@@ -19,6 +20,7 @@ def display_menu():
 
 
 def main():
+    initialize_database()
     manager = ExpenseManager()
 
     while True:
