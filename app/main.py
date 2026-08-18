@@ -1,3 +1,6 @@
+from app.expense_manager import ExpenseManager
+
+
 def display_menu():
     print("\n================================")
     print("      SMART EXPENSE MANAGER")
@@ -12,16 +15,41 @@ def display_menu():
 
 
 def main():
+    manager = ExpenseManager()
+
     while True:
         display_menu()
 
         choice = input("Enter choice: ")
 
         if choice == "1":
-            print("Add Expense selected")
+            print("Description:")
+            description = input()
+
+            print("Amount:")
+            amount = float(input())
+
+            print("Category:")
+            category = input()
+
+            expense = manager.add_expense(
+                description,
+                amount,
+                category
+            )
+
+            print(f"Expense {expense.id} added successfully.")
 
         elif choice == "2":
-            print("Delete Expense selected")
+            print("Enter ID to delete:")
+            expense_id = int(input())
+
+            deleted = manager.delete_expense(expense_id)
+
+            if deleted:
+                print("Expense deleted successfully.")
+            else:
+                print("Expense not found.")
 
         elif choice == "3":
             print("Total Expenses selected")
@@ -30,7 +58,15 @@ def main():
             print("Category Total selected")
 
         elif choice == "5":
-            print("List Expenses selected")
+            expenses = manager.list_expenses()
+
+            for expense in expenses:
+                print(
+                    f"{expense.id} "
+                    f"{expense.description} "
+                    f"{expense.amount:.2f} "
+                    f"{expense.category}"
+                )
 
         elif choice == "6":
             print("Exiting Smart Expense Manager...")
