@@ -171,3 +171,20 @@ def test_update_nonexistent_expense(tmp_path, monkeypatch):
     )
 
     assert result is False
+
+def test_expenses_by_date(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
+
+    expense = manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    date = expense.created_at.strftime("%Y-%m-%d")
+
+    expenses = manager.expenses_by_date(date)
+
+    assert len(expenses) == 1
+    assert expenses[0].id == expense.id
+    assert expenses[0].description == "Rent"

@@ -53,3 +53,6 @@ class ExpenseManager:
         )
 
         return self.repository.update(expense)
+    
+    def expenses_by_date(self, date):
+        return self.repository.get_by_date(date)

@@ -138,3 +138,33 @@ class ExpenseRepository:
         connection.close()
 
         return expense
+
+    def get_by_date(self, date):
+        connection = get_connection()
+
+        rows = connection.execute(
+            """
+            SELECT id, description, amount, category, created_at
+            FROM expenses
+            WHERE DATE(created_at) = ?
+            ORDER BY id
+            """,
+            (date,)
+        ).fetchall()
+
+        connection.close()
+
+        expenses = []
+
+        for row in rows:
+            expense = Expense(
+                row["id"],
+                row["description"],
+                row["amount"],
+                row["category"],
+                datetime.fromisoformat(row["created_at"])
+            )
+
+            expenses.append(expense)
+
+        return expenses

@@ -98,3 +98,31 @@ def test_repository_update(tmp_path, monkeypatch):
     assert expenses[0].description == "House Rent"
     assert expenses[0].amount == 550.00
     assert expenses[0].category == "Housing"
+
+def test_repository_get_by_date(tmp_path, monkeypatch):
+    database_path = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(database_path)
+    )
+
+    initialize_database()
+
+    repository = ExpenseRepository()
+
+    expense = Expense(
+        0,
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    repository.add(expense)
+
+    date = expense.created_at.strftime("%Y-%m-%d")
+
+    expenses = repository.get_by_date(date)
+
+    assert len(expenses) == 1
+    assert expenses[0].description == "Rent"
