@@ -43,3 +43,13 @@ class ExpenseManager:
                 total += expense.amount
 
         return total
+
+    def update_expense(self, expense_id, description, amount, category):
+        expense = Expense(
+            expense_id,
+            description,
+            amount,
+            category
+        )
+
+        return self.repository.update(expense)

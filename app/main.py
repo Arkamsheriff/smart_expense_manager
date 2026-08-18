@@ -15,7 +15,8 @@ def display_menu():
     print("3. Total Expenses")
     print("4. Category Total")
     print("5. List Expenses")
-    print("6. Exit")
+    print("6. Update Expense")
+    print("7. Exit")
     print("================================")
 
 
@@ -70,6 +71,21 @@ def main():
                 )
 
         elif choice == "6":
+            expense_id = get_valid_id("Enter ID to update: ")
+            description = get_non_empty_input("New Description: ")
+            amount = get_positive_amount("New Amount: ")
+            category = get_non_empty_input("New Category: ")
+            updated = manager.update_expense(
+                expense_id,
+                description,
+                amount,
+                category
+            )
+            if updated:
+                print("Expense updated successfully.")
+            else:
+                print("Expense not found.")
+        elif choice == "7":
             print("Exiting Smart Expense Manager...")
             break
 

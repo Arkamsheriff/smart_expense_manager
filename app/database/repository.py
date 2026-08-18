@@ -69,6 +69,30 @@ class ExpenseRepository:
 
         return expenses
 
+    def update(self, expense):
+        connection = get_connection()
+
+        cursor = connection.execute(
+            """
+            UPDATE expenses
+            SET description = ?,
+                amount = ?,
+                category = ?
+            WHERE id = ?
+            """,
+            (
+                expense.description,
+                expense.amount,
+                expense.category,
+                expense.id
+            )
+        )
+
+        connection.commit()
+        connection.close()
+
+        return cursor.rowcount > 0
+
     def delete(self, expense_id):
         connection = get_connection()
 
