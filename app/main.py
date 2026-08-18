@@ -25,19 +25,15 @@ def main():
         if choice == "1":
             print("Description:")
             description = input()
-
             print("Amount:")
             amount = float(input())
-
             print("Category:")
             category = input()
-
             expense = manager.add_expense(
                 description,
                 amount,
                 category
             )
-
             print(f"Expense {expense.id} added successfully.")
 
         elif choice == "2":
@@ -56,7 +52,10 @@ def main():
             print(f"{total:.2f}")
 
         elif choice == "4":
-            print("Category Total selected")
+            print("Enter category:")
+            category = input()
+            total = manager.category_total(category)
+            print(f"{total:.2f}")
 
         elif choice == "5":
             expenses = manager.list_expenses()

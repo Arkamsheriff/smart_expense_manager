@@ -38,3 +38,12 @@ class ExpenseManager:
             total += expense.amount
 
         return total
+
+    def category_total(self, category):
+        total = 0
+
+        for expense in self.expenses:
+            if expense.category == category:
+                total += expense.amount
+
+        return total
