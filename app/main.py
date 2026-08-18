@@ -67,7 +67,8 @@ def main():
                     f"{expense.id} "
                     f"{expense.description} "
                     f"{expense.amount:.2f} "
-                    f"{expense.category}"
+                    f"{expense.category} "
+                    f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
                 )
 
         elif choice == "6":

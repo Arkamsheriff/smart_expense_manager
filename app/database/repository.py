@@ -1,6 +1,6 @@
+from datetime import datetime
 from app.database.connection import get_connection
 from app.expense import Expense
-
 
 def initialize_database():
     connection = get_connection()
@@ -10,7 +10,8 @@ def initialize_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT NOT NULL,
             amount REAL NOT NULL,
-            category TEXT NOT NULL
+            category TEXT NOT NULL,
+            created_at TEXT NOT NULL
         )
     """)
 
@@ -47,7 +48,7 @@ class ExpenseRepository:
 
         rows = connection.execute(
             """
-            SELECT id, description, amount, category
+            SELECT id, description, amount, category, created_at
             FROM expenses
             ORDER BY id
             """
@@ -62,7 +63,8 @@ class ExpenseRepository:
                 row["id"],
                 row["description"],
                 row["amount"],
-                row["category"]
+                row["category"],
+                datetime.fromisoformat(row["created_at"])
             )
 
             expenses.append(expense)
@@ -108,3 +110,31 @@ class ExpenseRepository:
         connection.close()
 
         return cursor.rowcount > 0
+
+    def add(self, expense):
+        connection = get_connection()
+
+        cursor = connection.execute(
+            """
+            INSERT INTO expenses (
+                description,
+                amount,
+                category,
+                created_at
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                expense.description,
+                expense.amount,
+                expense.category,
+                expense.created_at.isoformat()
+            )
+        )
+
+        expense.id = cursor.lastrowid
+
+        connection.commit()
+        connection.close()
+
+        return expense
