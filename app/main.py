@@ -1,5 +1,9 @@
 from app.expense_manager import ExpenseManager
-
+from app.validators import (
+    get_non_empty_input,
+    get_positive_amount,
+    get_valid_id
+)
 
 def display_menu():
     print("\n================================")
@@ -23,12 +27,9 @@ def main():
         choice = input("Enter choice: ")
 
         if choice == "1":
-            print("Description:")
-            description = input()
-            print("Amount:")
-            amount = float(input())
-            print("Category:")
-            category = input()
+            description = get_non_empty_input("Description: ")
+            amount = get_positive_amount("Amount: ")
+            category = get_non_empty_input("Category: ")
             expense = manager.add_expense(
                 description,
                 amount,
@@ -37,8 +38,7 @@ def main():
             print(f"Expense {expense.id} added successfully.")
 
         elif choice == "2":
-            print("Enter ID to delete:")
-            expense_id = int(input())
+            expense_id = get_valid_id("Enter ID to delete: ")
 
             deleted = manager.delete_expense(expense_id)
 
@@ -52,8 +52,7 @@ def main():
             print(f"{total:.2f}")
 
         elif choice == "4":
-            print("Enter category:")
-            category = input()
+            category = get_non_empty_input("Enter category: ")
             total = manager.category_total(category)
             print(f"{total:.2f}")
 
