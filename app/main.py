@@ -52,7 +52,8 @@ def main():
                 print("Expense not found.")
 
         elif choice == "3":
-            print("Total Expenses selected")
+            total = manager.total_expenses()
+            print(f"{total:.2f}")
 
         elif choice == "4":
             print("Category Total selected")

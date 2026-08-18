@@ -30,3 +30,11 @@ class ExpenseManager:
                 return True
 
         return False
+
+    def total_expenses(self):
+        total = 0
+
+        for expense in self.expenses:
+            total += expense.amount
+
+        return total
