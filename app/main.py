@@ -1,5 +1,6 @@
 from app.expense_manager import ExpenseManager
 from app.database.repository import initialize_database
+from app.reports.report_service import ReportService
 from app.validators import (
     get_non_empty_input,
     get_positive_amount,
@@ -16,13 +17,15 @@ def display_menu():
     print("4. Category Total")
     print("5. List Expenses")
     print("6. Update Expense")
-    print("7. Exit")
+    print("7. Reports")
+    print("8. Exit")
     print("================================")
 
 
 def main():
     initialize_database()
     manager = ExpenseManager()
+    report_service = ReportService(manager)
 
     while True:
         display_menu()
@@ -87,6 +90,46 @@ def main():
             else:
                 print("Expense not found.")
         elif choice == "7":
+            while True:
+                print()
+                print("================================")
+                print("           REPORTS")
+                print("================================")
+                print("1. Today's Expenses")
+                print("2. Today's Total")
+                print("3. Back")
+                print("================================")
+
+                report_choice = input("Enter choice: ")
+
+                if report_choice == "1":
+                    expenses = report_service.today()
+
+                    if not expenses:
+                        print("No expenses found for today.")
+                    else:
+                        for expense in expenses:
+                            print(
+                                f"{expense.id} "
+                                f"{expense.description} "
+                                f"{expense.amount:.2f} "
+                                f"{expense.category} "
+                                f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                            )
+
+                elif report_choice == "2":
+                    expenses = report_service.today()
+
+                    total = report_service.total_for_expenses(expenses)
+
+                    print(f"{total:.2f}")
+
+                elif report_choice == "3":
+                    break
+
+                else:
+                    print("Invalid choice.")
+        elif choice == "8":
             print("Exiting Smart Expense Manager...")
             break
 
