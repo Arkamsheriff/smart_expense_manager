@@ -46,3 +46,58 @@ def test_report_total():
     report = ReportService(None)
 
     assert report.total_for_expenses(expenses) == 350.00
+
+def test_this_week(tmp_path, monkeypatch):
+    database_path = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(database_path)
+    )
+
+    from app.database.repository import initialize_database
+
+    initialize_database()
+
+    manager = ExpenseManager()
+
+    expense = manager.add_expense(
+        "Food",
+        200.00,
+        "Food"
+    )
+
+    report = ReportService(manager)
+
+    expenses = report.this_week()
+
+    assert len(expenses) == 1
+    assert expenses[0].id == expense.id
+
+
+def test_this_month(tmp_path, monkeypatch):
+    database_path = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(database_path)
+    )
+
+    from app.database.repository import initialize_database
+
+    initialize_database()
+
+    manager = ExpenseManager()
+
+    expense = manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    report = ReportService(manager)
+
+    expenses = report.this_month()
+
+    assert len(expenses) == 1
+    assert expenses[0].id == expense.id

@@ -18,3 +18,29 @@ class ReportService:
             total += expense.amount
 
         return total
+
+    def this_week(self):
+        today = datetime.now()
+        start_of_week = today - timedelta(days=today.weekday())
+
+        expenses = self.expense_manager.list_expenses()
+
+        return [
+            expense
+            for expense in expenses
+            if start_of_week.date() <= expense.created_at.date() <= today.date()
+        ]
+
+    def this_month(self):
+        today = datetime.now()
+
+        expenses = self.expense_manager.list_expenses()
+
+        return [
+            expense
+            for expense in expenses
+            if (
+                expense.created_at.year == today.year
+                and expense.created_at.month == today.month
+            )
+        ]

@@ -97,7 +97,9 @@ def main():
                 print("================================")
                 print("1. Today's Expenses")
                 print("2. Today's Total")
-                print("3. Back")
+                print("3. This Week")
+                print("4. This Month")
+                print("5. Back")
                 print("================================")
 
                 report_choice = input("Enter choice: ")
@@ -125,6 +127,36 @@ def main():
                     print(f"{total:.2f}")
 
                 elif report_choice == "3":
+                    expenses = report_service.this_week()
+
+                    if not expenses:
+                        print("No expenses found this week.")
+                    else:
+                        for expense in expenses:
+                            print(
+                                f"{expense.id} "
+                                f"{expense.description} "
+                                f"{expense.amount:.2f} "
+                                f"{expense.category} "
+                                f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                            )
+
+                elif report_choice == "4":
+                    expenses = report_service.this_month()
+
+                    if not expenses:
+                        print("No expenses found this month.")
+                    else:
+                        for expense in expenses:
+                            print(
+                                f"{expense.id} "
+                                f"{expense.description} "
+                                f"{expense.amount:.2f} "
+                                f"{expense.category} "
+                                f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                            )
+
+                elif report_choice == "5":
                     break
 
                 else:
