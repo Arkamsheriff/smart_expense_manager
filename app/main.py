@@ -1,6 +1,7 @@
 from app.expense_manager import ExpenseManager
 from app.database.repository import initialize_database
 from app.reports.report_service import ReportService
+from app.reports.visualization import VisualizationService
 from app.validators import (
     get_non_empty_input,
     get_positive_amount,
@@ -26,6 +27,7 @@ def main():
     initialize_database()
     manager = ExpenseManager()
     report_service = ReportService(manager)
+    visualization_service = VisualizationService()
 
     while True:
         display_menu()
@@ -101,7 +103,8 @@ def main():
                 print("4. This Month")
                 print("5. Category Summary")
                 print("6. Spending Statistics")
-                print("7. Back")
+                print("7. Charts")
+                print("8. Back")
                 print("================================")
                 report_choice = input("Enter choice: ")
                 if report_choice == "1":
@@ -172,6 +175,35 @@ def main():
                         print(f"Highest Expense: {statistics['highest']:.2f}")
                         print(f"Lowest Expense: {statistics['lowest']:.2f}")
                 elif report_choice == "7":
+                    while True:
+                        print()
+                        print("================================")
+                        print("            CHARTS")
+                        print("================================")
+                        print("1. Category Bar Chart")
+                        print("2. Category Pie Chart")
+                        print("3. Back")
+                        print("================================")
+                        chart_choice = input("Enter choice: ")
+                        if chart_choice == "1":
+                            expenses = report_service.this_month()
+                            summary = report_service.category_summary(expenses)
+                            figure = visualization_service.category_bar_chart(summary)
+                            if figure:
+                                import matplotlib.pyplot as plt
+                                plt.show()
+                        elif chart_choice == "2":
+                            expenses = report_service.this_month()
+                            summary = report_service.category_summary(expenses)
+                            figure = visualization_service.category_pie_chart(summary)
+                            if figure:
+                                import matplotlib.pyplot as plt
+                                plt.show()
+                        elif chart_choice == "3":
+                            break
+                        else:
+                            print("Invalid choice.")
+                elif report_choice == "8":
                     break
                 else:
                     print("Invalid choice.")
