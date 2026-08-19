@@ -6,3 +6,9 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+__pycache__/
+*.py[cod]
+.coverage
+.pytest_cache/
+venv/
+.env
