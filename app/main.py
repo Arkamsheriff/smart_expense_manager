@@ -2,6 +2,8 @@ from app.expense_manager import ExpenseManager
 from app.database.repository import initialize_database
 from app.reports.report_service import ReportService
 from app.reports.visualization import VisualizationService
+from app.exports.csv_exporter import CSVExporter
+import os
 from app.validators import (
     get_non_empty_input,
     get_positive_amount,
@@ -19,7 +21,8 @@ def display_menu():
     print("5. List Expenses")
     print("6. Update Expense")
     print("7. Reports")
-    print("8. Exit")
+    print("8. Export")
+    print("9. Exit")
     print("================================")
 
 
@@ -28,6 +31,7 @@ def main():
     manager = ExpenseManager()
     report_service = ReportService(manager)
     visualization_service = VisualizationService()
+    csv_exporter = CSVExporter()
 
     while True:
         display_menu()
@@ -208,6 +212,34 @@ def main():
                 else:
                     print("Invalid choice.")
         elif choice == "8":
+            while True:
+                print()
+                print("================================")
+                print("            EXPORT")
+                print("================================")
+                print("1. Export All Expenses to CSV")
+                print("2. Back")
+                print("================================")
+                export_choice = input("Enter choice: ")
+                if export_choice == "1":
+                    expenses = manager.list_expenses()
+                    os.makedirs("reports", exist_ok=True)
+                    file_path = "reports/expenses.csv"
+                    csv_exporter.export(
+                        expenses,
+                        file_path
+                            )
+
+                    print(
+                        f"Expenses exported successfully to {file_path}"
+                    )
+
+                elif export_choice == "2":
+                    break
+
+                else:
+                    print("Invalid choice.")
+        elif choice == "9":
             print("Exiting Smart Expense Manager...")
             break
         else:

@@ -6,7 +6,7 @@ matplotlib.use("Agg")
 
 def test_main_exit(monkeypatch):
     inputs = iter([
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -29,7 +29,7 @@ def test_main_add_expense(monkeypatch, tmp_path):
         "TestExpense",
         "100",
         "TestCategory",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -45,7 +45,7 @@ def test_main_add_expense(monkeypatch):
         "TestExpense",
         "100",
         "TestCategory",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -70,7 +70,7 @@ def test_main_total_expenses(monkeypatch, tmp_path):
         "500",
         "Housing",
         "3",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -94,7 +94,7 @@ def test_main_list_expenses(monkeypatch, tmp_path):
         "200",
         "Food",
         "5",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -119,7 +119,7 @@ def test_main_delete_expense(monkeypatch, tmp_path):
         "Housing",
         "2",
         "1",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -144,7 +144,7 @@ def test_main_category_total(monkeypatch, tmp_path):
         "Food",
         "4",
         "Food",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -172,7 +172,7 @@ def test_main_update_expense(monkeypatch, tmp_path):
         "HouseRent",
         "550",
         "Housing",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -200,7 +200,7 @@ def test_main_reports_menu(monkeypatch, tmp_path):
         "2",
         "3",
         "8",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -228,7 +228,7 @@ def test_main_monthly_reports(monkeypatch, tmp_path):
         "5",
         "6",
         "8",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -256,7 +256,7 @@ def test_main_charts(monkeypatch, tmp_path):
         "1",
         "3",
         "8",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
@@ -291,7 +291,7 @@ def test_main_pie_chart(monkeypatch, tmp_path):
         "2",
         "3",
         "8",
-        "8"
+        "9"
     ])
 
     monkeypatch.setattr(
