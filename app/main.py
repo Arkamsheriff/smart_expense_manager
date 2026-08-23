@@ -3,6 +3,7 @@ from app.database.repository import initialize_database
 from app.reports.report_service import ReportService
 from app.reports.visualization import VisualizationService
 from app.exports.csv_exporter import CSVExporter
+import matplotlib.pyplot as plt
 import os
 from app.validators import (
     get_non_empty_input,
@@ -26,7 +27,7 @@ def display_menu():
     print("================================")
 
 
-def main():
+def main(show_charts=True):
     initialize_database()
     manager = ExpenseManager()
     report_service = ReportService(manager)
@@ -192,19 +193,28 @@ def main():
                         if chart_choice == "1":
                             expenses = report_service.this_month()
                             summary = report_service.category_summary(expenses)
+
                             figure = visualization_service.category_bar_chart(summary)
+
                             if figure:
-                                import matplotlib.pyplot as plt
-                                plt.show()
+                                if show_charts:
+                                    plt.show()
+                                plt.close(figure)
+
                         elif chart_choice == "2":
                             expenses = report_service.this_month()
                             summary = report_service.category_summary(expenses)
+
                             figure = visualization_service.category_pie_chart(summary)
+
                             if figure:
-                                import matplotlib.pyplot as plt
-                                plt.show()
+                                if show_charts:
+                                    plt.show()
+                                plt.close(figure)
+
                         elif chart_choice == "3":
                             break
+
                         else:
                             print("Invalid choice.")
                 elif report_choice == "8":

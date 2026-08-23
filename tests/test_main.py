@@ -264,7 +264,7 @@ def test_main_charts(monkeypatch, tmp_path):
         lambda _: next(inputs)
     )
 
-    main_module.main()
+    main_module.main(show_charts=False)
 
 
 def test_main_pie_chart(monkeypatch, tmp_path):
@@ -273,12 +273,6 @@ def test_main_pie_chart(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "app.database.connection.DATABASE_PATH",
         str(test_database)
-    )
-
-    monkeypatch.setattr(
-        plt,
-        "show",
-        lambda: None
     )
 
     inputs = iter([
@@ -299,4 +293,4 @@ def test_main_pie_chart(monkeypatch, tmp_path):
         lambda _: next(inputs)
     )
 
-    main_module.main()
+    main_module.main(show_charts=False)
