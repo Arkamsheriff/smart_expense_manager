@@ -144,3 +144,16 @@ def test_spending_statistics():
     assert statistics["average"] == 125.00
     assert statistics["highest"] == 200.00
     assert statistics["lowest"] == 50.00
+
+def test_spending_statistics_empty():
+    service = ReportService(None)
+
+    result = service.spending_statistics([])
+
+    assert result == {
+        "count": 0,
+        "total": 0.0,
+        "average": 0.0,
+        "highest": 0.0,
+        "lowest": 0.0
+    }

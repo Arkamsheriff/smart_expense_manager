@@ -6,30 +6,7 @@ matplotlib.use("Agg")
 
 def test_main_exit(monkeypatch):
     inputs = iter([
-        "9"
-    ])
-
-    monkeypatch.setattr(
-        "builtins.input",
-        lambda _: next(inputs)
-    )
-
-    main_module.main()
-
-def test_main_add_expense(monkeypatch, tmp_path):
-    test_database = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(test_database)
-    )
-
-    inputs = iter([
-        "1",
-        "TestExpense",
-        "100",
-        "TestCategory",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -45,7 +22,7 @@ def test_main_add_expense(monkeypatch):
         "TestExpense",
         "100",
         "TestCategory",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -70,7 +47,7 @@ def test_main_total_expenses(monkeypatch, tmp_path):
         "500",
         "Housing",
         "3",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -94,7 +71,7 @@ def test_main_list_expenses(monkeypatch, tmp_path):
         "200",
         "Food",
         "5",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -119,7 +96,7 @@ def test_main_delete_expense(monkeypatch, tmp_path):
         "Housing",
         "2",
         "1",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -144,7 +121,7 @@ def test_main_category_total(monkeypatch, tmp_path):
         "Food",
         "4",
         "Food",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -172,7 +149,7 @@ def test_main_update_expense(monkeypatch, tmp_path):
         "HouseRent",
         "550",
         "Housing",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -200,7 +177,7 @@ def test_main_reports_menu(monkeypatch, tmp_path):
         "2",
         "3",
         "8",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -228,7 +205,7 @@ def test_main_monthly_reports(monkeypatch, tmp_path):
         "5",
         "6",
         "8",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -256,7 +233,7 @@ def test_main_charts(monkeypatch, tmp_path):
         "1",
         "3",
         "8",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -285,7 +262,7 @@ def test_main_pie_chart(monkeypatch, tmp_path):
         "2",
         "3",
         "8",
-        "9"
+        "10"
     ])
 
     monkeypatch.setattr(
@@ -294,3 +271,425 @@ def test_main_pie_chart(monkeypatch, tmp_path):
     )
 
     main_module.main(show_charts=False)
+
+def test_main_search_by_description(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "1",
+        "Monthly Rent",
+        "500",
+        "Housing",
+        "1",
+        "Groceries",
+        "200",
+        "Food",
+        "9",
+        "1",
+        "Rent",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+
+def test_main_filter_by_category(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "1",
+        "Rent",
+        "500",
+        "Housing",
+        "1",
+        "Groceries",
+        "200",
+        "Food",
+        "9",
+        "2",
+        "Food",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+
+def test_main_filter_by_amount(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "1",
+        "Rent",
+        "500",
+        "Housing",
+        "1",
+        "Groceries",
+        "200",
+        "Food",
+        "9",
+        "3",
+        "200",
+        "500",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_delete_nonexistent_expense(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "2",
+        "99",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_update_nonexistent_expense(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "6",
+        "99",
+        "Something",
+        "100",
+        "Misc",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_invalid_choice(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "99",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_list_expenses_empty(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "5",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_empty_reports(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "7",
+        "1",
+        "3",
+        "4",
+        "5",
+        "6",
+        "8",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_invalid_report_choice(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "7",
+        "99",
+        "8",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_invalid_chart_choice(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "7",
+        "7",
+        "99",
+        "3",
+        "8",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main(show_charts=False)
+
+def test_main_export(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    monkeypatch.chdir(tmp_path)
+
+    inputs = iter([
+        "1",
+        "Food",
+        "200",
+        "Food",
+        "8",
+        "1",
+        "2",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+    assert (tmp_path / "reports" / "expenses.csv").exists()
+
+def test_main_invalid_export_choice(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "8",
+        "99",
+        "2",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_search_no_results(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "9",
+        "1",
+        "SomethingThatDoesNotExist",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_filter_category_no_results(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "9",
+        "2",
+        "NonexistentCategory",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_filter_amount_no_results(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "9",
+        "3",
+        "500",
+        "1000",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_invalid_amount_range(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "9",
+        "3",
+        "500",
+        "100",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_invalid_search_choice(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "9",
+        "99",
+        "4",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+

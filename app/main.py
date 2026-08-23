@@ -23,7 +23,8 @@ def display_menu():
     print("6. Update Expense")
     print("7. Reports")
     print("8. Export")
-    print("9. Exit")
+    print("9. Search & Filter")
+    print("10. Exit")
     print("================================")
 
 
@@ -250,6 +251,95 @@ def main(show_charts=True):
                 else:
                     print("Invalid choice.")
         elif choice == "9":
+            while True:
+                print()
+                print("================================")
+                print("        SEARCH & FILTER")
+                print("================================")
+                print("1. Search by Description")
+                print("2. Filter by Category")
+                print("3. Filter by Amount Range")
+                print("4. Back")
+                print("================================")
+
+                search_choice = input("Enter choice: ")
+
+                if search_choice == "1":
+                    keyword = get_non_empty_input(
+                        "Enter description keyword: "
+                    )
+
+                    expenses = manager.search_expenses(keyword)
+
+                    if not expenses:
+                        print("No expenses found.")
+                    else:
+                        for expense in expenses:
+                            print(
+                                f"{expense.id} "
+                                f"{expense.description} "
+                                f"{expense.amount:.2f} "
+                                f"{expense.category} "
+                                f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                            )
+
+                elif search_choice == "2":
+                    category = get_non_empty_input(
+                        "Enter category: "
+                    )
+
+                    expenses = manager.filter_expenses_by_category(
+                        category
+                    )
+
+                    if not expenses:
+                        print("No expenses found.")
+                    else:
+                        for expense in expenses:
+                            print(
+                                f"{expense.id} "
+                                f"{expense.description} "
+                                f"{expense.amount:.2f} "
+                                f"{expense.category} "
+                                f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                            )
+
+                elif search_choice == "3":
+                    minimum = get_positive_amount(
+                        "Enter minimum amount: "
+                    )
+
+                    maximum = get_positive_amount(
+                        "Enter maximum amount: "
+                    )
+
+                    if minimum > maximum:
+                        print("Minimum amount cannot exceed maximum amount.")
+                        continue
+
+                    expenses = manager.filter_expenses_by_amount(
+                        minimum,
+                        maximum
+                    )
+
+                    if not expenses:
+                        print("No expenses found.")
+                    else:
+                        for expense in expenses:
+                            print(
+                                f"{expense.id} "
+                                f"{expense.description} "
+                                f"{expense.amount:.2f} "
+                                f"{expense.category} "
+                                f"{expense.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                            )
+
+                elif search_choice == "4":
+                    break
+
+                else:
+                    print("Invalid choice.")
+        elif choice == "10":
             print("Exiting Smart Expense Manager...")
             break
         else:

@@ -27,3 +27,18 @@ def test_category_pie_chart():
     }
 
     service.category_pie_chart(data)
+
+def test_category_bar_chart_empty_data():
+    service = VisualizationService()
+
+    result = service.category_bar_chart({})
+
+    assert result is None
+
+
+def test_category_pie_chart_empty_data():
+    service = VisualizationService()
+
+    result = service.category_pie_chart({})
+
+    assert result is None

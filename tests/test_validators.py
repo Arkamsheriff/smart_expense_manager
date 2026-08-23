@@ -16,6 +16,22 @@ def test_get_non_empty_input(monkeypatch):
     assert result == "Rent"
 
 
+def test_get_non_empty_input_rejects_empty(monkeypatch):
+    inputs = iter([
+        "",
+        "Rent"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    result = get_non_empty_input("Description: ")
+
+    assert result == "Rent"
+
+
 def test_get_positive_amount(monkeypatch):
     monkeypatch.setattr(
         "builtins.input",
@@ -27,10 +43,106 @@ def test_get_positive_amount(monkeypatch):
     assert result == 500.50
 
 
+def test_get_positive_amount_rejects_zero(monkeypatch):
+    inputs = iter([
+        "0",
+        "500"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    result = get_positive_amount("Amount: ")
+
+    assert result == 500
+
+
+def test_get_positive_amount_rejects_negative(monkeypatch):
+    inputs = iter([
+        "-100",
+        "500"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    result = get_positive_amount("Amount: ")
+
+    assert result == 500
+
+
+def test_get_positive_amount_rejects_invalid_number(monkeypatch):
+    inputs = iter([
+        "abc",
+        "500"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    result = get_positive_amount("Amount: ")
+
+    assert result == 500
+
+
 def test_get_valid_id(monkeypatch):
     monkeypatch.setattr(
         "builtins.input",
         lambda _: "10"
+    )
+
+    result = get_valid_id("ID: ")
+
+    assert result == 10
+
+
+def test_get_valid_id_rejects_zero(monkeypatch):
+    inputs = iter([
+        "0",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    result = get_valid_id("ID: ")
+
+    assert result == 10
+
+
+def test_get_valid_id_rejects_negative(monkeypatch):
+    inputs = iter([
+        "-5",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    result = get_valid_id("ID: ")
+
+    assert result == 10
+
+
+def test_get_valid_id_rejects_invalid_input(monkeypatch):
+    inputs = iter([
+        "abc",
+        "10"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
     )
 
     result = get_valid_id("ID: ")
