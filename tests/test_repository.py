@@ -311,3 +311,19 @@ def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
     assert 500.00 in amounts
     assert 1500.00 not in amounts
 
+def test_database_directory_created(tmp_path, monkeypatch):
+    database_path = tmp_path / "new_data" / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(database_path)
+    )
+
+    from app.database.connection import get_connection
+
+    connection = get_connection()
+
+    assert database_path.parent.exists()
+    assert database_path.exists()
+
+    connection.close()

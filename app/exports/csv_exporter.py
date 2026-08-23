@@ -1,9 +1,15 @@
 import csv
+import os
 
 
 class CSVExporter:
 
     def export(self, expenses, file_path):
+        directory = os.path.dirname(str(file_path))
+
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
         with open(
             file_path,
             "w",

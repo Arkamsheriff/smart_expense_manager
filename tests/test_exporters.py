@@ -36,3 +36,24 @@ def test_csv_export(tmp_path):
     assert "ID,Description,Amount,Category,Created At" in content
     assert "1,Rent,500.00,Housing,2026-08-19 20:15:31" in content
     assert "2,Food,200.00,Food,2026-08-19 20:20:10" in content
+
+def test_csv_export_creates_directory(tmp_path):
+
+    expenses = [
+        Expense(
+            1,
+            "Rent",
+            500.00,
+            "Housing",
+            datetime(2026, 8, 19, 20, 15, 31)
+        )
+    ]
+
+    file_path = tmp_path / "new_reports" / "expenses.csv"
+
+    exporter = CSVExporter()
+
+    exporter.export(expenses, file_path)
+
+    assert file_path.exists()
+    assert file_path.parent.exists()
