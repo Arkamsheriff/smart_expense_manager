@@ -188,3 +188,81 @@ def test_expenses_by_date(tmp_path, monkeypatch):
     assert len(expenses) == 1
     assert expenses[0].id == expense.id
     assert expenses[0].description == "Rent"
+
+def test_search_expenses(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
+
+    manager.add_expense(
+        "Monthly Rent",
+        500.00,
+        "Housing"
+    )
+
+    manager.add_expense(
+        "Restaurant Dinner",
+        200.00,
+        "Food"
+    )
+
+    results = manager.search_expenses("Rent")
+
+    assert len(results) == 1
+    assert results[0].description == "Monthly Rent"
+
+
+def test_filter_expenses_by_category(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
+
+    manager.add_expense(
+        "Monthly Rent",
+        500.00,
+        "Housing"
+    )
+
+    manager.add_expense(
+        "Groceries",
+        150.00,
+        "Food"
+    )
+
+    manager.add_expense(
+        "Restaurant",
+        200.00,
+        "Food"
+    )
+
+    results = manager.filter_expenses_by_category("Food")
+
+    assert len(results) == 2
+
+    for expense in results:
+        assert expense.category == "Food"
+
+
+def test_filter_expenses_by_amount(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
+
+    manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    manager.add_expense(
+        "Food",
+        150.00,
+        "Food"
+    )
+
+    manager.add_expense(
+        "Shopping",
+        300.00,
+        "Shopping"
+    )
+
+    results = manager.filter_expenses_by_amount(200.00, 500.00)
+
+    assert len(results) == 2
+
+    for expense in results:
+        assert 200.00 <= expense.amount <= 500.00

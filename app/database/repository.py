@@ -1,6 +1,8 @@
 from datetime import datetime
+
 from app.database.connection import get_connection
 from app.expense import Expense
+
 
 def initialize_database():
     connection = get_connection()
@@ -26,13 +28,19 @@ class ExpenseRepository:
 
         cursor = connection.execute(
             """
-            INSERT INTO expenses (description, amount, category)
-            VALUES (?, ?, ?)
+            INSERT INTO expenses (
+                description,
+                amount,
+                category,
+                created_at
+            )
+            VALUES (?, ?, ?, ?)
             """,
             (
                 expense.description,
                 expense.amount,
-                expense.category
+                expense.category,
+                expense.created_at.isoformat()
             )
         )
 
@@ -56,20 +64,7 @@ class ExpenseRepository:
 
         connection.close()
 
-        expenses = []
-
-        for row in rows:
-            expense = Expense(
-                row["id"],
-                row["description"],
-                row["amount"],
-                row["category"],
-                datetime.fromisoformat(row["created_at"])
-            )
-
-            expenses.append(expense)
-
-        return expenses
+        return self._convert_rows_to_expenses(rows)
 
     def update(self, expense):
         connection = get_connection()
@@ -111,34 +106,6 @@ class ExpenseRepository:
 
         return cursor.rowcount > 0
 
-    def add(self, expense):
-        connection = get_connection()
-
-        cursor = connection.execute(
-            """
-            INSERT INTO expenses (
-                description,
-                amount,
-                category,
-                created_at
-            )
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                expense.description,
-                expense.amount,
-                expense.category,
-                expense.created_at.isoformat()
-            )
-        )
-
-        expense.id = cursor.lastrowid
-
-        connection.commit()
-        connection.close()
-
-        return expense
-
     def get_by_date(self, date):
         connection = get_connection()
 
@@ -154,6 +121,60 @@ class ExpenseRepository:
 
         connection.close()
 
+        return self._convert_rows_to_expenses(rows)
+
+    def search_by_description(self, keyword):
+        connection = get_connection()
+
+        rows = connection.execute(
+            """
+            SELECT id, description, amount, category, created_at
+            FROM expenses
+            WHERE description LIKE ?
+            ORDER BY created_at DESC
+            """,
+            (f"%{keyword}%",)
+        ).fetchall()
+
+        connection.close()
+
+        return self._convert_rows_to_expenses(rows)
+
+    def filter_by_category(self, category):
+        connection = get_connection()
+
+        rows = connection.execute(
+            """
+            SELECT id, description, amount, category, created_at
+            FROM expenses
+            WHERE LOWER(category) = LOWER(?)
+            ORDER BY created_at DESC
+            """,
+            (category,)
+        ).fetchall()
+
+        connection.close()
+
+        return self._convert_rows_to_expenses(rows)
+
+    def filter_by_amount_range(self, minimum, maximum):
+        connection = get_connection()
+
+        rows = connection.execute(
+            """
+            SELECT id, description, amount, category, created_at
+            FROM expenses
+            WHERE amount BETWEEN ? AND ?
+            ORDER BY amount ASC
+            """,
+            (minimum, maximum)
+        ).fetchall()
+
+        connection.close()
+
+        return self._convert_rows_to_expenses(rows)
+
+    def _convert_rows_to_expenses(self, rows):
         expenses = []
 
         for row in rows:

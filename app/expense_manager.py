@@ -56,3 +56,12 @@ class ExpenseManager:
     
     def expenses_by_date(self, date):
         return self.repository.get_by_date(date)
+
+    def search_expenses(self, keyword):
+        return self.repository.search_by_description(keyword)
+
+    def filter_expenses_by_category(self, category):
+        return self.repository.filter_by_category(category)
+
+    def filter_expenses_by_amount(self, minimum, maximum):
+        return self.repository.filter_by_amount_range(minimum, maximum)
