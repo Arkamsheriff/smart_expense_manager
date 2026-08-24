@@ -39,7 +39,7 @@ class ExpenseManager:
         total = 0
 
         for expense in expenses:
-            if expense.category == category:
+            if expense.category.lower() == category.lower():
                 total += expense.amount
 
         return total
@@ -53,7 +53,7 @@ class ExpenseManager:
         )
 
         return self.repository.update(expense)
-    
+
     def expenses_by_date(self, date):
         return self.repository.get_by_date(date)
 
@@ -64,4 +64,7 @@ class ExpenseManager:
         return self.repository.filter_by_category(category)
 
     def filter_expenses_by_amount(self, minimum, maximum):
-        return self.repository.filter_by_amount_range(minimum, maximum)
+        return self.repository.filter_by_amount_range(
+            minimum,
+            maximum
+        )

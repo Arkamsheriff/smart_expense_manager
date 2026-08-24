@@ -266,3 +266,27 @@ def test_filter_expenses_by_amount(tmp_path, monkeypatch):
 
     for expense in results:
         assert 200.00 <= expense.amount <= 500.00
+
+def test_category_total_case_insensitive(tmp_path, monkeypatch):
+    manager = create_manager(tmp_path, monkeypatch)
+
+    manager.add_expense(
+        "Groceries",
+        150.75,
+        "Food"
+    )
+
+    manager.add_expense(
+        "Restaurant",
+        100.00,
+        "Food"
+    )
+
+    manager.add_expense(
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    assert manager.category_total("food") == 250.75
+    assert manager.category_total("FOOD") == 250.75
