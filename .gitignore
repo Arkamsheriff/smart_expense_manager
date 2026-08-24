@@ -1,14 +1,19 @@
+# Python cache and compiled files
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Testing and coverage
 .pytest_cache/
+.coverage
+
+# Virtual environments
 .venv/
+venv/
+
+# Environment variables
 .env
+
+# Local databases
 *.db
 *.sqlite
 *.sqlite3
-__pycache__/
-*.py[cod]
-.coverage
-.pytest_cache/
-venv/
-.env
