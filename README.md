@@ -1,14 +1,14 @@
 # Smart Expense Manager
 
-A Python-based personal expense management and analytics application built with **SQLite, Pytest, Matplotlib, and modular software architecture**.
+A Python-based personal expense management and analytics application built with SQLite, Pytest, Matplotlib, and modular software architecture.
 
-The application allows users to manage expenses, generate time-based reports, analyze spending patterns, visualize category-wise spending, and export expense data to CSV.
+The application allows users to manage expenses, generate time-based reports, analyze spending patterns, visualize category-wise spending, search and filter expenses, and export expense data to CSV.
 
 ---
 
-## 🚀 Features
+## Features
 
-### 💰 Expense Management
+### Expense Management
 
 - Add expenses
 - Update existing expenses
@@ -18,20 +18,20 @@ The application allows users to manage expenses, generate time-based reports, an
 - Date and time tracking
 - Persistent SQLite database storage
 
-### 📊 Expense Analysis
+### Expense Analysis
 
 - Calculate total expenses
 - Calculate category-wise expenses
 - Analyze monthly spending
 - Generate category spending summaries
-- Calculate spending statistics
+- Calculate spending statistics:
   - Number of expenses
   - Total spending
   - Average expense
   - Highest expense
   - Lowest expense
 
-### 📅 Reports
+### Reports
 
 - Today's expenses
 - Today's total spending
@@ -40,39 +40,50 @@ The application allows users to manage expenses, generate time-based reports, an
 - Category spending summaries
 - Monthly spending statistics
 
-### 📈 Data Visualization
+### Search and Filtering
+
+- Search expenses by description
+- Filter expenses by category
+- Filter expenses by amount range
+- Case-insensitive category filtering
+- Display results directly through the CLI
+
+### Data Visualization
 
 - Category-wise bar charts
 - Category-wise pie charts
 - Matplotlib-based visualization
 
-### 📤 Data Export
+### Data Export
 
 - Export all expenses to CSV
-- Structured CSV output for further analysis
+- Structured CSV output
+- Automatic report directory creation
 
-### 🛡️ Validation
+### Validation
 
 - Description validation
 - Amount validation
 - Category validation
 - Expense ID validation
 - Input error handling
+- Invalid amount-range handling
 
-### 🧪 Testing
+### Testing
 
 - Automated testing using Pytest
-- Unit tests for expense management
 - Repository/database tests
+- Expense manager tests
 - Validation tests
 - Report service tests
 - Visualization tests
 - Main application tests
 - CSV exporter tests
+- Code coverage analysis
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Technology | Purpose |
 |---|---|
@@ -87,7 +98,7 @@ The application allows users to manage expenses, generate time-based reports, an
 
 ---
 
-## 🏗️ Application Architecture
+## Application Architecture
 
 The project follows a modular architecture that separates application logic, database operations, reporting, validation, visualization, and data export.
 
