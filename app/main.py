@@ -1,6 +1,8 @@
 from app.expense_manager import ExpenseManager
 from app.budget.budget_manager import BudgetManager
 from app.budget.budget_cli import handle_budget_menu
+from app.goals.goal_manager import GoalManager
+from app.goals.goal_cli import handle_goal_menu
 from app.database.repository import initialize_database
 from app.reports.report_service import ReportService
 from app.reports.visualization import VisualizationService
@@ -27,7 +29,8 @@ def display_menu():
     print("8. Export")
     print("9. Search & Filter")
     print("10. Budget Management")
-    print("11. Exit")
+    print("11. Financial Goals")
+    print("12. Exit")
     print("================================")
 
 def handle_charts(report_service, visualization_service, show_charts=True):
@@ -312,6 +315,7 @@ def main(show_charts=True):
     initialize_database()
     manager = ExpenseManager()
     budget_manager = BudgetManager()
+    goal_manager = GoalManager()
     report_service = ReportService(manager)
     visualization_service = VisualizationService()
     csv_exporter = CSVExporter()
@@ -417,6 +421,10 @@ def main(show_charts=True):
                 manager
             )
         elif choice == "11":
+            handle_goal_menu(
+                goal_manager
+            )
+        elif choice == "12":
             print("Exiting Smart Expense Manager...")
             break
         else:
