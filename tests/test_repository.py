@@ -1,3 +1,7 @@
+import sqlite3
+
+import pytest
+
 from app.database.repository import (
     initialize_database,
     ExpenseRepository
@@ -62,7 +66,9 @@ def test_repository_delete(tmp_path, monkeypatch):
     assert result is True
     assert repository.get_all() == []
 
+
 def test_repository_update(tmp_path, monkeypatch):
+
     database_path = tmp_path / "test.db"
 
     monkeypatch.setattr(
@@ -99,7 +105,9 @@ def test_repository_update(tmp_path, monkeypatch):
     assert expenses[0].amount == 550.00
     assert expenses[0].category == "Housing"
 
+
 def test_repository_get_by_date(tmp_path, monkeypatch):
+
     database_path = tmp_path / "test.db"
 
     monkeypatch.setattr(
@@ -127,7 +135,9 @@ def test_repository_get_by_date(tmp_path, monkeypatch):
     assert len(expenses) == 1
     assert expenses[0].description == "Rent"
 
+
 def test_repository_search_by_description(tmp_path, monkeypatch):
+
     database_path = tmp_path / "test.db"
 
     monkeypatch.setattr(
@@ -163,7 +173,9 @@ def test_repository_search_by_description(tmp_path, monkeypatch):
     assert expenses[0].description == "Monthly Rent"
     assert expenses[0].amount == 500.00
 
+
 def test_repository_filter_by_category(tmp_path, monkeypatch):
+
     database_path = tmp_path / "test.db"
 
     monkeypatch.setattr(
@@ -205,12 +217,15 @@ def test_repository_filter_by_category(tmp_path, monkeypatch):
     expenses = repository.filter_by_category("housing")
 
     assert len(expenses) == 2
+
     assert all(
         expense.category.lower() == "housing"
         for expense in expenses
     )
 
+
 def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
+
     database_path = tmp_path / "test.db"
 
     monkeypatch.setattr(
@@ -262,56 +277,9 @@ def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
     assert 500.00 in amounts
     assert 1500.00 not in amounts
 
-def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
-
-    repository = ExpenseRepository()
-
-    repository.add(
-        Expense(
-            0,
-            "Coffee",
-            100.00,
-            "Food"
-        )
-    )
-
-    repository.add(
-        Expense(
-            0,
-            "Groceries",
-            500.00,
-            "Food"
-        )
-    )
-
-    repository.add(
-        Expense(
-            0,
-            "Rent",
-            1500.00,
-            "Housing"
-        )
-    )
-
-    expenses = repository.filter_by_amount_range(100, 500)
-
-    assert len(expenses) == 2
-
-    amounts = [expense.amount for expense in expenses]
-
-    assert 100.00 in amounts
-    assert 500.00 in amounts
-    assert 1500.00 not in amounts
 
 def test_database_directory_created(tmp_path, monkeypatch):
+
     database_path = tmp_path / "new_data" / "test.db"
 
     monkeypatch.setattr(
@@ -327,3 +295,130 @@ def test_database_directory_created(tmp_path, monkeypatch):
     assert database_path.exists()
 
     connection.close()
+
+
+def test_repository_add_database_error(monkeypatch):
+
+    class FailingConnection:
+
+        def execute(self, *args, **kwargs):
+            raise sqlite3.OperationalError("database error")
+
+        def rollback(self):
+            self.rollback_called = True
+
+        def close(self):
+            self.close_called = True
+
+    connection = FailingConnection()
+
+    monkeypatch.setattr(
+        "app.database.repository.get_connection",
+        lambda: connection
+    )
+
+    repository = ExpenseRepository()
+
+    expense = Expense(
+        0,
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    with pytest.raises(sqlite3.Error):
+        repository.add(expense)
+
+    assert connection.rollback_called is True
+    assert connection.close_called is True
+
+
+def test_repository_update_database_error(monkeypatch):
+
+    class FailingConnection:
+
+        def execute(self, *args, **kwargs):
+            raise sqlite3.OperationalError("database error")
+
+        def rollback(self):
+            self.rollback_called = True
+
+        def close(self):
+            self.close_called = True
+
+    connection = FailingConnection()
+
+    monkeypatch.setattr(
+        "app.database.repository.get_connection",
+        lambda: connection
+    )
+
+    repository = ExpenseRepository()
+
+    expense = Expense(
+        1,
+        "Rent",
+        500.00,
+        "Housing"
+    )
+
+    with pytest.raises(sqlite3.Error):
+        repository.update(expense)
+
+    assert connection.rollback_called is True
+    assert connection.close_called is True
+
+
+def test_repository_delete_database_error(monkeypatch):
+
+    class FailingConnection:
+
+        def execute(self, *args, **kwargs):
+            raise sqlite3.OperationalError("database error")
+
+        def rollback(self):
+            self.rollback_called = True
+
+        def close(self):
+            self.close_called = True
+
+    connection = FailingConnection()
+
+    monkeypatch.setattr(
+        "app.database.repository.get_connection",
+        lambda: connection
+    )
+
+    repository = ExpenseRepository()
+
+    with pytest.raises(sqlite3.Error):
+        repository.delete(1)
+
+    assert connection.rollback_called is True
+    assert connection.close_called is True
+
+def test_initialize_database_error(monkeypatch):
+
+    class FailingConnection:
+
+        def execute(self, *args, **kwargs):
+            raise sqlite3.OperationalError("database error")
+
+        def rollback(self):
+            self.rollback_called = True
+
+        def close(self):
+            self.close_called = True
+
+    connection = FailingConnection()
+
+    monkeypatch.setattr(
+        "app.database.repository.get_connection",
+        lambda: connection
+    )
+
+    with pytest.raises(sqlite3.Error):
+        initialize_database()
+
+    assert connection.rollback_called is True
+    assert connection.close_called is True
