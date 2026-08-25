@@ -3,6 +3,8 @@ from app.budget.budget_manager import BudgetManager
 from app.budget.budget_cli import handle_budget_menu
 from app.goals.goal_manager import GoalManager
 from app.goals.goal_cli import handle_goal_menu
+from app.recurring.recurring_manager import RecurringExpenseManager
+from app.recurring.recurring_cli import handle_recurring_menu
 from app.database.repository import initialize_database
 from app.reports.report_service import ReportService
 from app.reports.visualization import VisualizationService
@@ -30,7 +32,8 @@ def display_menu():
     print("9. Search & Filter")
     print("10. Budget Management")
     print("11. Financial Goals")
-    print("12. Exit")
+    print("12. Recurring Expenses")
+    print("13. Exit")
     print("================================")
 
 def handle_charts(report_service, visualization_service, show_charts=True):
@@ -316,6 +319,7 @@ def main(show_charts=True):
     manager = ExpenseManager()
     budget_manager = BudgetManager()
     goal_manager = GoalManager()
+    recurring_manager = RecurringExpenseManager()
     report_service = ReportService(manager)
     visualization_service = VisualizationService()
     csv_exporter = CSVExporter()
@@ -425,6 +429,10 @@ def main(show_charts=True):
                 goal_manager
             )
         elif choice == "12":
+            handle_recurring_menu(
+                recurring_manager
+            )
+        elif choice == "13":
             print("Exiting Smart Expense Manager...")
             break
         else:
