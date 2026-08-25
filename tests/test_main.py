@@ -6,7 +6,7 @@ matplotlib.use("Agg")
 
 def test_main_exit(monkeypatch):
     inputs = iter([
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -23,7 +23,7 @@ def test_main_add_expense(monkeypatch):
         "TestExpense",
         "100",
         "TestCategory",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -48,7 +48,7 @@ def test_main_total_expenses(monkeypatch, tmp_path):
         "500",
         "Housing",
         "3",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -73,7 +73,7 @@ def test_main_list_expenses(monkeypatch, tmp_path):
         "200",
         "Food",
         "5",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -99,7 +99,7 @@ def test_main_delete_expense(monkeypatch, tmp_path):
         "Housing",
         "2",
         "1",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -125,7 +125,7 @@ def test_main_category_total(monkeypatch, tmp_path):
         "Food",
         "4",
         "Food",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -154,7 +154,7 @@ def test_main_update_expense(monkeypatch, tmp_path):
         "HouseRent",
         "550",
         "Housing",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -183,7 +183,7 @@ def test_main_reports_menu(monkeypatch, tmp_path):
         "2",
         "3",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -212,7 +212,7 @@ def test_main_monthly_reports(monkeypatch, tmp_path):
         "5",
         "6",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -241,7 +241,7 @@ def test_main_charts(monkeypatch, tmp_path):
         "1",
         "3",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -270,7 +270,7 @@ def test_main_pie_chart(monkeypatch, tmp_path):
         "2",
         "3",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -302,7 +302,7 @@ def test_main_search_by_description(monkeypatch, tmp_path):
         "1",
         "Rent",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -334,7 +334,7 @@ def test_main_filter_by_category(monkeypatch, tmp_path):
         "2",
         "Food",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -367,7 +367,7 @@ def test_main_filter_by_amount(monkeypatch, tmp_path):
         "200",
         "500",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -389,7 +389,7 @@ def test_main_delete_nonexistent_expense(monkeypatch, tmp_path):
     inputs = iter([
         "2",
         "99",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -414,7 +414,7 @@ def test_main_update_nonexistent_expense(monkeypatch, tmp_path):
         "Something",
         "100",
         "Misc",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -435,7 +435,7 @@ def test_main_invalid_choice(monkeypatch, tmp_path):
 
     inputs = iter([
         "99",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -456,7 +456,7 @@ def test_main_list_expenses_empty(monkeypatch, tmp_path):
 
     inputs = iter([
         "5",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -483,7 +483,7 @@ def test_main_empty_reports(monkeypatch, tmp_path):
         "5",
         "6",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -506,7 +506,7 @@ def test_main_invalid_report_choice(monkeypatch, tmp_path):
         "7",
         "99",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -531,7 +531,7 @@ def test_main_invalid_chart_choice(monkeypatch, tmp_path):
         "99",
         "3",
         "8",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -560,7 +560,7 @@ def test_main_export(monkeypatch, tmp_path):
         "8",
         "1",
         "2",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -585,7 +585,7 @@ def test_main_invalid_export_choice(monkeypatch, tmp_path):
         "8",
         "99",
         "2",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -609,7 +609,7 @@ def test_main_search_no_results(monkeypatch, tmp_path):
         "1",
         "SomethingThatDoesNotExist",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -633,7 +633,7 @@ def test_main_filter_category_no_results(monkeypatch, tmp_path):
         "2",
         "NonexistentCategory",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -658,7 +658,7 @@ def test_main_filter_amount_no_results(monkeypatch, tmp_path):
         "500",
         "1000",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -683,7 +683,7 @@ def test_main_invalid_amount_range(monkeypatch, tmp_path):
         "500",
         "100",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -706,7 +706,7 @@ def test_main_invalid_search_choice(monkeypatch, tmp_path):
         "9",
         "99",
         "4",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -715,6 +715,7 @@ def test_main_invalid_search_choice(monkeypatch, tmp_path):
     )
 
     main_module.main()
+
 
 def test_main_financial_goals_menu(monkeypatch, tmp_path):
     test_database = tmp_path / "test.db"
@@ -727,7 +728,7 @@ def test_main_financial_goals_menu(monkeypatch, tmp_path):
     inputs = iter([
         "11",
         "9",
-        "12"
+        "13"
     ])
 
     monkeypatch.setattr(
@@ -736,6 +737,7 @@ def test_main_financial_goals_menu(monkeypatch, tmp_path):
     )
 
     main_module.main()
+
 
 def test_main_create_financial_goal(monkeypatch, tmp_path):
     test_database = tmp_path / "test.db"
@@ -746,14 +748,64 @@ def test_main_create_financial_goal(monkeypatch, tmp_path):
     )
 
     inputs = iter([
-        "11",              # Financial Goals
-        "1",               # Create Goal
-        "Emergency Fund",  # Goal name
-        "100000",          # Target amount
-        "10000",           # Current amount
-        "2027-06",         # Target date
-        "9",               # Back
-        "12"               # Exit
+        "11",
+        "1",
+        "Emergency Fund",
+        "100000",
+        "10000",
+        "2027-06",
+        "9",
+        "13"
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+def test_main_recurring_expenses_menu(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "12",   # Recurring Expenses
+        "8",    # Back
+        "13"    # Exit
+    ])
+
+    monkeypatch.setattr(
+        "builtins.input",
+        lambda _: next(inputs)
+    )
+
+    main_module.main()
+
+
+def test_main_create_recurring_expense(monkeypatch, tmp_path):
+    test_database = tmp_path / "test.db"
+
+    monkeypatch.setattr(
+        "app.database.connection.DATABASE_PATH",
+        str(test_database)
+    )
+
+    inputs = iter([
+        "12",              # Recurring Expenses
+        "1",               # Create
+        "Monthly Rent",    # Description
+        "15000",           # Amount
+        "Housing",         # Category
+        "3",               # Monthly
+        "2026-08-25",      # Start date
+        "",                # No end date
+        "8",               # Back
+        "13"               # Exit
     ])
 
     monkeypatch.setattr(
