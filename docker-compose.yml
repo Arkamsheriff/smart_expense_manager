@@ -1,0 +1,32 @@
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-expense-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+    networks:
+      - smart-expense-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend/frontend
+      dockerfile: Dockerfile
+    container_name: smart-expense-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - smart-expense-network
+    restart: unless-stopped
+
+networks:
+  smart-expense-network:
+    driver: bridge
