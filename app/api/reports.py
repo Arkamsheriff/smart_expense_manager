@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from io import StringIO
 import csv
-import sqlite3
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -15,13 +14,18 @@ router = APIRouter(
 )
 
 
-def row_to_expense(row: sqlite3.Row) -> dict:
+def row_to_expense(row) -> dict:
+    created_at = row["created_at"]
+
+    if hasattr(created_at, "isoformat"):
+        created_at = created_at.isoformat()
+
     return {
         "id": row["id"],
         "description": row["description"],
         "amount": float(row["amount"]),
         "category": row["category"],
-        "created_at": row["created_at"],
+        "created_at": created_at,
     }
 
 
@@ -43,10 +47,15 @@ def get_all_expenses() -> list[dict]:
         connection.close()
 
 
-def parse_created_at(value: str) -> datetime:
+def parse_created_at(value) -> datetime:
     """
-    Supports the common SQLite datetime formats used by the project.
+    Convert SQLite strings or PostgreSQL datetime values
+    into a datetime object.
     """
+
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if value.tzinfo else value
+
     formats = [
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%dT%H:%M:%S",
@@ -59,7 +68,9 @@ def parse_created_at(value: str) -> datetime:
         except ValueError:
             continue
 
-    return datetime.fromisoformat(value)
+    parsed = datetime.fromisoformat(value)
+
+    return parsed.replace(tzinfo=None) if parsed.tzinfo else parsed
 
 
 def period_report(start: datetime, end: datetime | None = None) -> dict:

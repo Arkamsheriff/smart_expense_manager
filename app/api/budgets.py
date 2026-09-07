@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+import psycopg
 
 from app.budget.budget_manager import BudgetManager
 from app.database.connection import get_connection
@@ -39,11 +40,17 @@ def build_budget_response(budget):
     connection = get_connection()
 
     try:
+        placeholder = (
+            "%s"
+            if isinstance(connection, psycopg.Connection)
+            else "?"
+        )
+
         row = connection.execute(
-            """
+            f"""
             SELECT COALESCE(SUM(amount), 0) AS spent
             FROM expenses
-            WHERE LOWER(category) = LOWER(?)
+            WHERE LOWER(category) = LOWER({placeholder})
             """,
             (budget.month,)
         ).fetchone()
