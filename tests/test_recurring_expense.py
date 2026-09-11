@@ -8,7 +8,7 @@ def test_recurring_expense_creation():
         649,
         "Entertainment",
         "Monthly",
-        "2026-08"
+        "2026-08-01"
     )
 
     assert expense.id == 1
@@ -16,7 +16,7 @@ def test_recurring_expense_creation():
     assert expense.amount == 649
     assert expense.category == "Entertainment"
     assert expense.frequency == "Monthly"
-    assert expense.start_date == "2026-08"
+    assert expense.start_date == "2026-08-01"
     assert expense.end_date is None
     assert expense.active is True
 
@@ -28,8 +28,8 @@ def test_recurring_expense_with_end_date():
         2500,
         "Insurance",
         "Monthly",
-        "2026-08",
-        "2027-08"
+        "2026-08-01",
+        "2027-08-01"
     )
 
     assert expense.id == 2
@@ -37,8 +37,8 @@ def test_recurring_expense_with_end_date():
     assert expense.amount == 2500
     assert expense.category == "Insurance"
     assert expense.frequency == "Monthly"
-    assert expense.start_date == "2026-08"
-    assert expense.end_date == "2027-08"
+    assert expense.start_date == "2026-08-01"
+    assert expense.end_date == "2027-08-01"
     assert expense.active is True
 
 
@@ -49,7 +49,7 @@ def test_recurring_expense_inactive():
         1500,
         "Health",
         "Monthly",
-        "2026-08",
+        "2026-08-01",
         active=False
     )
 
@@ -63,7 +63,7 @@ def test_recurring_expense_zero_amount():
         0,
         "Subscription",
         "Monthly",
-        "2026-08"
+        "2026-08-01"
     )
 
     assert expense.amount == 0

@@ -9,6 +9,7 @@ from app.api.recurring import router as recurring_router
 from app.api.budgets import router as budgets_router
 from app.api.goals import router as goals_router
 from app.api.reports import router as reports_router
+from app.api.auth import CurrentUser
 
 
 initialize_database()
@@ -24,6 +25,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://localhost:5174",
         "https://smart-expense-manager-frontend.onrender.com"
     ],
     allow_credentials=True,
@@ -52,4 +54,11 @@ def root():
 def health():
     return {
         "status": "healthy"
+    }
+
+@app.get("/api/auth/me")
+def auth_me(current_user: CurrentUser):
+    return {
+        "id": current_user["id"],
+        "email": current_user.get("email"),
     }

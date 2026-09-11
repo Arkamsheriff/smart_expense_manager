@@ -9,6 +9,7 @@ from psycopg.rows import dict_row
 load_dotenv()
 
 DATABASE_PATH = "data/expenses.db"
+DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000"
 
 
 def get_connection():

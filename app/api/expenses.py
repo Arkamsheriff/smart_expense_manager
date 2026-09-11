@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from app.expense_manager import ExpenseManager
+from app.api.auth import CurrentUser
 
 
 router = APIRouter(
@@ -44,8 +44,10 @@ def expense_to_response(expense):
 
 
 @router.get("", response_model=list[ExpenseResponse])
-def get_expenses():
-    expenses = manager.list_expenses()
+def get_expenses(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    expenses = manager.list_expenses(user_id)
 
     return [
         expense_to_response(expense)
@@ -54,8 +56,13 @@ def get_expenses():
 
 
 @router.get("/{expense_id}", response_model=ExpenseResponse)
-def get_expense(expense_id: int):
-    expenses = manager.list_expenses()
+def get_expense(
+    expense_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    expenses = manager.list_expenses(user_id)
 
     for expense in expenses:
         if expense.id == expense_id:
@@ -68,8 +75,14 @@ def get_expense(expense_id: int):
 
 
 @router.post("", response_model=ExpenseResponse, status_code=201)
-def create_expense(expense: ExpenseCreate):
+def create_expense(
+    expense: ExpenseCreate,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
     created = manager.add_expense(
+        user_id,
         expense.description,
         expense.amount,
         expense.category
@@ -81,9 +94,13 @@ def create_expense(expense: ExpenseCreate):
 @router.put("/{expense_id}", response_model=ExpenseResponse)
 def update_expense(
     expense_id: int,
-    expense: ExpenseUpdate
+    expense: ExpenseUpdate,
+    current_user: CurrentUser
 ):
+    user_id = current_user["id"]
+
     updated = manager.update_expense(
+        user_id,
         expense_id,
         expense.description,
         expense.amount,
@@ -96,7 +113,7 @@ def update_expense(
             detail="Expense not found"
         )
 
-    expenses = manager.list_expenses()
+    expenses = manager.list_expenses(user_id)
 
     for existing in expenses:
         if existing.id == expense_id:
@@ -109,8 +126,16 @@ def update_expense(
 
 
 @router.delete("/{expense_id}")
-def delete_expense(expense_id: int):
-    deleted = manager.delete_expense(expense_id)
+def delete_expense(
+    expense_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    deleted = manager.delete_expense(
+        user_id,
+        expense_id
+    )
 
     if not deleted:
         raise HTTPException(
@@ -124,8 +149,10 @@ def delete_expense(expense_id: int):
 
 
 @router.get("/total/summary")
-def get_total_expenses():
-    total = manager.total_expenses()
+def get_total_expenses(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    total = manager.total_expenses(user_id)
 
     return {
         "total": float(total)
@@ -133,8 +160,16 @@ def get_total_expenses():
 
 
 @router.get("/category/{category}")
-def get_category_total(category: str):
-    total = manager.category_total(category)
+def get_category_total(
+    category: str,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    total = manager.category_total(
+        user_id,
+        category
+    )
 
     return {
         "category": category,
@@ -143,8 +178,16 @@ def get_category_total(category: str):
 
 
 @router.get("/search/{keyword}")
-def search_expenses(keyword: str):
-    expenses = manager.search_expenses(keyword)
+def search_expenses(
+    keyword: str,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    expenses = manager.search_expenses(
+        user_id,
+        keyword
+    )
 
     return [
         expense_to_response(expense)
@@ -153,8 +196,16 @@ def search_expenses(keyword: str):
 
 
 @router.get("/filter/category/{category}")
-def filter_by_category(category: str):
-    expenses = manager.filter_expenses_by_category(category)
+def filter_by_category(
+    category: str,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    expenses = manager.filter_expenses_by_category(
+        user_id,
+        category
+    )
 
     return [
         expense_to_response(expense)
@@ -165,7 +216,8 @@ def filter_by_category(category: str):
 @router.get("/filter/amount")
 def filter_by_amount(
     minimum: float,
-    maximum: float
+    maximum: float,
+    current_user: CurrentUser
 ):
     if minimum < 0 or maximum < 0:
         raise HTTPException(
@@ -179,7 +231,10 @@ def filter_by_amount(
             detail="Minimum amount cannot exceed maximum amount"
         )
 
+    user_id = current_user["id"]
+
     expenses = manager.filter_expenses_by_amount(
+        user_id,
         minimum,
         maximum
     )

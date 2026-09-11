@@ -2,7 +2,7 @@ import sqlite3
 
 import psycopg
 
-from app.database.connection import get_connection
+from app.database.connection import get_connection, DEFAULT_USER_ID
 from app.goals.goal import Goal
 
 
@@ -32,9 +32,13 @@ class GoalRepository:
                         target_amount DOUBLE PRECISION NOT NULL,
                         current_amount DOUBLE PRECISION NOT NULL DEFAULT 0,
                         target_date DATE,
-                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        user_id UUID NOT NULL
                     )
                     """
+                )
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id)"
                 )
             else:
                 connection.execute(
@@ -45,9 +49,28 @@ class GoalRepository:
                         target_amount REAL NOT NULL,
                         current_amount REAL NOT NULL DEFAULT 0,
                         target_date TEXT,
-                        created_at TEXT NOT NULL
+                        created_at TEXT NOT NULL,
+                        user_id TEXT
                     )
                     """
+                )
+
+                columns = connection.execute(
+                    "PRAGMA table_info(goals)"
+                ).fetchall()
+
+                column_names = [
+                    column["name"]
+                    for column in columns
+                ]
+
+                if "user_id" not in column_names:
+                    connection.execute(
+                        "ALTER TABLE goals ADD COLUMN user_id TEXT"
+                    )
+
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id)"
                 )
 
             connection.commit()
@@ -59,7 +82,7 @@ class GoalRepository:
         finally:
             connection.close()
 
-    def add(self, goal):
+    def add(self, goal, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -71,9 +94,10 @@ class GoalRepository:
                         target_amount,
                         current_amount,
                         target_date,
-                        created_at
+                        created_at,
+                        user_id
                     )
-                    VALUES (%s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -81,7 +105,8 @@ class GoalRepository:
                         goal.target_amount,
                         goal.current_amount,
                         goal.target_date,
-                        goal.created_at
+                        goal.created_at,
+                        user_id
                     )
                 )
 
@@ -95,16 +120,18 @@ class GoalRepository:
                         target_amount,
                         current_amount,
                         target_date,
-                        created_at
+                        created_at,
+                        user_id
                     )
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
                         goal.name,
                         goal.target_amount,
                         goal.current_amount,
                         goal.target_date,
-                        goal.created_at.isoformat()
+                        goal.created_at.isoformat(),
+                        user_id
                     )
                 )
 
@@ -121,7 +148,7 @@ class GoalRepository:
         finally:
             connection.close()
 
-    def get_by_id(self, goal_id):
+    def get_by_id(self, goal_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -138,8 +165,12 @@ class GoalRepository:
                     created_at
                 FROM goals
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (goal_id,)
+                (
+                    goal_id,
+                    user_id
+                )
             ).fetchone()
 
             if row is None:
@@ -150,12 +181,14 @@ class GoalRepository:
         finally:
             connection.close()
 
-    def get_all(self):
+    def get_all(self, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
+            placeholder = _placeholder(connection)
+
             rows = connection.execute(
-                """
+                f"""
                 SELECT
                     id,
                     name,
@@ -164,8 +197,10 @@ class GoalRepository:
                     target_date,
                     created_at
                 FROM goals
+                WHERE user_id = {placeholder}
                 ORDER BY id
-                """
+                """,
+                (user_id,)
             ).fetchall()
 
             return [
@@ -176,7 +211,7 @@ class GoalRepository:
         finally:
             connection.close()
 
-    def update(self, goal):
+    def update(self, goal, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -191,13 +226,15 @@ class GoalRepository:
                     current_amount = {placeholder},
                     target_date = {placeholder}
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
                 (
                     goal.name,
                     goal.target_amount,
                     goal.current_amount,
                     goal.target_date,
-                    goal.id
+                    goal.id,
+                    user_id
                 )
             )
 
@@ -212,7 +249,7 @@ class GoalRepository:
         finally:
             connection.close()
 
-    def delete(self, goal_id):
+    def delete(self, goal_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -222,8 +259,12 @@ class GoalRepository:
                 f"""
                 DELETE FROM goals
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (goal_id,)
+                (
+                    goal_id,
+                    user_id
+                )
             )
 
             connection.commit()

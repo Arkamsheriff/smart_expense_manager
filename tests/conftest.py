@@ -4,28 +4,41 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.main import app
+from app.api.auth import get_current_user
 from app.database import connection
 
 
-@pytest.fixture
-def test_db(tmp_path, monkeypatch):
-    """
-    Create an isolated SQLite database for API tests.
+TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 
-    The real data/expenses.db database is never used by these tests.
+
+@pytest.fixture(autouse=True)
+def force_sqlite_for_all_tests(monkeypatch, tmp_path):
+    """
+    Force every test to use an isolated SQLite database.
+
+    This prevents tests from accidentally connecting to the
+    Supabase/PostgreSQL production database through .env.
     """
 
     db_path = tmp_path / "test_expenses.db"
 
+    # Always use SQLite during tests.
+    monkeypatch.setenv("USE_POSTGRES", "false")
+
+    # Point the application database connection to this test DB.
     monkeypatch.setattr(
         connection,
         "DATABASE_PATH",
         str(db_path)
     )
 
+    # Create the tables required by the application.
     conn = sqlite3.connect(db_path)
 
-    # Expenses table
+    # ---------------------------------------------------------
+    # Expenses
+    # ---------------------------------------------------------
+
     conn.execute(
         """
         CREATE TABLE expenses (
@@ -33,14 +46,16 @@ def test_db(tmp_path, monkeypatch):
             description TEXT NOT NULL,
             amount REAL NOT NULL,
             category TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            user_id TEXT
         )
         """
     )
 
-    # Income table
-    # IMPORTANT:
-    # The application repository uses the table name "incomes".
+    # ---------------------------------------------------------
+    # Income
+    # ---------------------------------------------------------
+
     conn.execute(
         """
         CREATE TABLE incomes (
@@ -48,24 +63,32 @@ def test_db(tmp_path, monkeypatch):
             description TEXT NOT NULL,
             amount REAL NOT NULL,
             category TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            user_id TEXT
         )
         """
     )
 
-    # Budgets table
+    # ---------------------------------------------------------
+    # Budgets
+    # ---------------------------------------------------------
+
     conn.execute(
         """
         CREATE TABLE budgets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             month TEXT NOT NULL,
             amount REAL NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            user_id TEXT
         )
         """
     )
 
-    # Goals table
+    # ---------------------------------------------------------
+    # Goals
+    # ---------------------------------------------------------
+
     conn.execute(
         """
         CREATE TABLE goals (
@@ -74,12 +97,16 @@ def test_db(tmp_path, monkeypatch):
             target_amount REAL NOT NULL,
             current_amount REAL NOT NULL DEFAULT 0,
             target_date TEXT,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            user_id TEXT
         )
         """
     )
 
-    # Recurring expenses table
+    # ---------------------------------------------------------
+    # Recurring Expenses
+    # ---------------------------------------------------------
+
     conn.execute(
         """
         CREATE TABLE recurring_expenses (
@@ -90,7 +117,8 @@ def test_db(tmp_path, monkeypatch):
             frequency TEXT NOT NULL,
             start_date TEXT NOT NULL,
             end_date TEXT,
-            active INTEGER NOT NULL DEFAULT 1
+            active INTEGER NOT NULL DEFAULT 1,
+            user_id TEXT
         )
         """
     )
@@ -102,10 +130,46 @@ def test_db(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def client(test_db):
+def test_db(force_sqlite_for_all_tests):
     """
-    Provide a FastAPI TestClient using the isolated test database.
+    Backward-compatible fixture for tests that explicitly request
+    test_db.
     """
 
-    with TestClient(app) as test_client:
-        yield test_client
+    return force_sqlite_for_all_tests
+
+
+@pytest.fixture
+def authenticated_user():
+    """
+    Return the fake authenticated user used by API tests.
+    """
+
+    return {
+        "id": TEST_USER_ID,
+        "email": "test@example.com",
+    }
+
+
+@pytest.fixture
+def client(test_db, authenticated_user):
+    """
+    Provide a FastAPI TestClient using the isolated SQLite database
+    and an authenticated test user.
+    """
+
+    def override_get_current_user():
+        return authenticated_user
+
+    app.dependency_overrides[get_current_user] = (
+        override_get_current_user
+    )
+
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.pop(
+            get_current_user,
+            None
+        )

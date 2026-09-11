@@ -9,9 +9,21 @@ from app.database.repository import (
 from app.expense import Expense
 
 
-def test_repository_add_and_get_all(tmp_path, monkeypatch):
+TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
+OTHER_USER_ID = "00000000-0000-0000-0000-000000000002"
+
+
+def setup_test_database(tmp_path, monkeypatch):
+    """
+    Configure an isolated SQLite database for repository tests.
+    """
 
     database_path = tmp_path / "test.db"
+
+    monkeypatch.setenv(
+        "USE_POSTGRES",
+        "false"
+    )
 
     monkeypatch.setattr(
         "app.database.connection.DATABASE_PATH",
@@ -19,6 +31,13 @@ def test_repository_add_and_get_all(tmp_path, monkeypatch):
     )
 
     initialize_database()
+
+    return database_path
+
+
+def test_repository_add_and_get_all(tmp_path, monkeypatch):
+
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -29,9 +48,14 @@ def test_repository_add_and_get_all(tmp_path, monkeypatch):
         "Housing"
     )
 
-    repository.add(expense)
+    repository.add(
+        expense,
+        TEST_USER_ID
+    )
 
-    expenses = repository.get_all()
+    expenses = repository.get_all(
+        TEST_USER_ID
+    )
 
     assert len(expenses) == 1
     assert expenses[0].description == "Rent"
@@ -41,14 +65,7 @@ def test_repository_add_and_get_all(tmp_path, monkeypatch):
 
 def test_repository_delete(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -59,24 +76,26 @@ def test_repository_delete(tmp_path, monkeypatch):
         "Food"
     )
 
-    repository.add(expense)
+    repository.add(
+        expense,
+        TEST_USER_ID
+    )
 
-    result = repository.delete(expense.id)
+    result = repository.delete(
+        expense.id,
+        TEST_USER_ID
+    )
 
     assert result is True
-    assert repository.get_all() == []
+
+    assert repository.get_all(
+        TEST_USER_ID
+    ) == []
 
 
 def test_repository_update(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -87,17 +106,25 @@ def test_repository_update(tmp_path, monkeypatch):
         "Housing"
     )
 
-    repository.add(expense)
+    repository.add(
+        expense,
+        TEST_USER_ID
+    )
 
     expense.description = "House Rent"
     expense.amount = 550.00
     expense.category = "Housing"
 
-    result = repository.update(expense)
+    result = repository.update(
+        expense,
+        TEST_USER_ID
+    )
 
     assert result is True
 
-    expenses = repository.get_all()
+    expenses = repository.get_all(
+        TEST_USER_ID
+    )
 
     assert len(expenses) == 1
     assert expenses[0].id == expense.id
@@ -108,14 +135,7 @@ def test_repository_update(tmp_path, monkeypatch):
 
 def test_repository_get_by_date(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -126,11 +146,19 @@ def test_repository_get_by_date(tmp_path, monkeypatch):
         "Housing"
     )
 
-    repository.add(expense)
+    repository.add(
+        expense,
+        TEST_USER_ID
+    )
 
-    date = expense.created_at.strftime("%Y-%m-%d")
+    date = expense.created_at.strftime(
+        "%Y-%m-%d"
+    )
 
-    expenses = repository.get_by_date(date)
+    expenses = repository.get_by_date(
+        date,
+        TEST_USER_ID
+    )
 
     assert len(expenses) == 1
     assert expenses[0].description == "Rent"
@@ -138,14 +166,7 @@ def test_repository_get_by_date(tmp_path, monkeypatch):
 
 def test_repository_search_by_description(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -155,7 +176,8 @@ def test_repository_search_by_description(tmp_path, monkeypatch):
             "Monthly Rent",
             500.00,
             "Housing"
-        )
+        ),
+        TEST_USER_ID
     )
 
     repository.add(
@@ -164,10 +186,14 @@ def test_repository_search_by_description(tmp_path, monkeypatch):
             "Grocery Shopping",
             200.00,
             "Food"
-        )
+        ),
+        TEST_USER_ID
     )
 
-    expenses = repository.search_by_description("Rent")
+    expenses = repository.search_by_description(
+        "Rent",
+        TEST_USER_ID
+    )
 
     assert len(expenses) == 1
     assert expenses[0].description == "Monthly Rent"
@@ -176,14 +202,7 @@ def test_repository_search_by_description(tmp_path, monkeypatch):
 
 def test_repository_filter_by_category(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -193,7 +212,8 @@ def test_repository_filter_by_category(tmp_path, monkeypatch):
             "Rent",
             500.00,
             "Housing"
-        )
+        ),
+        TEST_USER_ID
     )
 
     repository.add(
@@ -202,7 +222,8 @@ def test_repository_filter_by_category(tmp_path, monkeypatch):
             "Groceries",
             200.00,
             "Food"
-        )
+        ),
+        TEST_USER_ID
     )
 
     repository.add(
@@ -211,10 +232,14 @@ def test_repository_filter_by_category(tmp_path, monkeypatch):
             "Electricity",
             150.00,
             "Housing"
-        )
+        ),
+        TEST_USER_ID
     )
 
-    expenses = repository.filter_by_category("housing")
+    expenses = repository.filter_by_category(
+        "housing",
+        TEST_USER_ID
+    )
 
     assert len(expenses) == 2
 
@@ -226,14 +251,7 @@ def test_repository_filter_by_category(tmp_path, monkeypatch):
 
 def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database_path)
-    )
-
-    initialize_database()
+    setup_test_database(tmp_path, monkeypatch)
 
     repository = ExpenseRepository()
 
@@ -243,7 +261,8 @@ def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
             "Coffee",
             100.00,
             "Food"
-        )
+        ),
+        TEST_USER_ID
     )
 
     repository.add(
@@ -252,7 +271,8 @@ def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
             "Groceries",
             500.00,
             "Food"
-        )
+        ),
+        TEST_USER_ID
     )
 
     repository.add(
@@ -261,26 +281,161 @@ def test_repository_filter_by_amount_range(tmp_path, monkeypatch):
             "Rent",
             1500.00,
             "Housing"
-        )
+        ),
+        TEST_USER_ID
     )
 
     expenses = repository.filter_by_amount_range(
         100,
-        500
+        500,
+        TEST_USER_ID
     )
 
     assert len(expenses) == 2
 
-    amounts = [expense.amount for expense in expenses]
+    amounts = [
+        expense.amount
+        for expense in expenses
+    ]
 
     assert 100.00 in amounts
     assert 500.00 in amounts
     assert 1500.00 not in amounts
 
 
+def test_repository_user_isolation(tmp_path, monkeypatch):
+
+    setup_test_database(tmp_path, monkeypatch)
+
+    repository = ExpenseRepository()
+
+    user_one_expense = Expense(
+        0,
+        "User One Expense",
+        100.00,
+        "Food"
+    )
+
+    user_two_expense = Expense(
+        0,
+        "User Two Expense",
+        200.00,
+        "Travel"
+    )
+
+    repository.add(
+        user_one_expense,
+        TEST_USER_ID
+    )
+
+    repository.add(
+        user_two_expense,
+        OTHER_USER_ID
+    )
+
+    user_one_expenses = repository.get_all(
+        TEST_USER_ID
+    )
+
+    user_two_expenses = repository.get_all(
+        OTHER_USER_ID
+    )
+
+    assert len(user_one_expenses) == 1
+    assert user_one_expenses[0].description == "User One Expense"
+
+    assert len(user_two_expenses) == 1
+    assert user_two_expenses[0].description == "User Two Expense"
+
+
+def test_repository_user_cannot_delete_other_users_expense(
+    tmp_path,
+    monkeypatch
+):
+
+    setup_test_database(tmp_path, monkeypatch)
+
+    repository = ExpenseRepository()
+
+    expense = Expense(
+        0,
+        "Private Expense",
+        500.00,
+        "Food"
+    )
+
+    repository.add(
+        expense,
+        TEST_USER_ID
+    )
+
+    result = repository.delete(
+        expense.id,
+        OTHER_USER_ID
+    )
+
+    assert result is False
+
+    expenses = repository.get_all(
+        TEST_USER_ID
+    )
+
+    assert len(expenses) == 1
+    assert expenses[0].description == "Private Expense"
+
+
+def test_repository_user_cannot_update_other_users_expense(
+    tmp_path,
+    monkeypatch
+):
+
+    setup_test_database(tmp_path, monkeypatch)
+
+    repository = ExpenseRepository()
+
+    expense = Expense(
+        0,
+        "Private Expense",
+        500.00,
+        "Food"
+    )
+
+    repository.add(
+        expense,
+        TEST_USER_ID
+    )
+
+    expense.description = "Hacked Expense"
+    expense.amount = 9999.00
+
+    result = repository.update(
+        expense,
+        OTHER_USER_ID
+    )
+
+    assert result is False
+
+    expenses = repository.get_all(
+        TEST_USER_ID
+    )
+
+    assert len(expenses) == 1
+    assert expenses[0].description == "Private Expense"
+    assert expenses[0].amount == 500.00
+
+
 def test_database_directory_created(tmp_path, monkeypatch):
 
-    database_path = tmp_path / "new_data" / "test.db"
+    database_path = (
+        tmp_path /
+        "new_data" /
+        "test.db"
+    )
+
+    monkeypatch.setenv(
+        "USE_POSTGRES",
+        "false"
+    )
 
     monkeypatch.setattr(
         "app.database.connection.DATABASE_PATH",
@@ -302,7 +457,9 @@ def test_repository_add_database_error(monkeypatch):
     class FailingConnection:
 
         def execute(self, *args, **kwargs):
-            raise sqlite3.OperationalError("database error")
+            raise sqlite3.OperationalError(
+                "database error"
+            )
 
         def rollback(self):
             self.rollback_called = True
@@ -327,7 +484,10 @@ def test_repository_add_database_error(monkeypatch):
     )
 
     with pytest.raises(sqlite3.Error):
-        repository.add(expense)
+        repository.add(
+            expense,
+            TEST_USER_ID
+        )
 
     assert connection.rollback_called is True
     assert connection.close_called is True
@@ -338,7 +498,9 @@ def test_repository_update_database_error(monkeypatch):
     class FailingConnection:
 
         def execute(self, *args, **kwargs):
-            raise sqlite3.OperationalError("database error")
+            raise sqlite3.OperationalError(
+                "database error"
+            )
 
         def rollback(self):
             self.rollback_called = True
@@ -363,7 +525,10 @@ def test_repository_update_database_error(monkeypatch):
     )
 
     with pytest.raises(sqlite3.Error):
-        repository.update(expense)
+        repository.update(
+            expense,
+            TEST_USER_ID
+        )
 
     assert connection.rollback_called is True
     assert connection.close_called is True
@@ -374,7 +539,9 @@ def test_repository_delete_database_error(monkeypatch):
     class FailingConnection:
 
         def execute(self, *args, **kwargs):
-            raise sqlite3.OperationalError("database error")
+            raise sqlite3.OperationalError(
+                "database error"
+            )
 
         def rollback(self):
             self.rollback_called = True
@@ -392,17 +559,23 @@ def test_repository_delete_database_error(monkeypatch):
     repository = ExpenseRepository()
 
     with pytest.raises(sqlite3.Error):
-        repository.delete(1)
+        repository.delete(
+            1,
+            TEST_USER_ID
+        )
 
     assert connection.rollback_called is True
     assert connection.close_called is True
+
 
 def test_initialize_database_error(monkeypatch):
 
     class FailingConnection:
 
         def execute(self, *args, **kwargs):
-            raise sqlite3.OperationalError("database error")
+            raise sqlite3.OperationalError(
+                "database error"
+            )
 
         def rollback(self):
             self.rollback_called = True

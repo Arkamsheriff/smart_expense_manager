@@ -7,8 +7,13 @@ import type {
 import type { DashboardSummary } from '@/types/dashboard';
 
 import { apiClient } from './client';
+import { supabase } from '@/lib/supabase';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (window.location.hostname === 'localhost'
+    ? 'http://127.0.0.1:8000/api'
+    : '/api');
 
 export const reportsApi = {
   today: (): Promise<PeriodReport> =>
@@ -32,11 +37,29 @@ export const reportsApi = {
     ),
 
   exportCsv: async (): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/reports/export-csv`);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/reports/export-csv`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const message = await response.text().catch(() => '');
-      throw new Error(message || 'Failed to export CSV');
+      throw new Error(
+        message || 'Failed to export CSV'
+      );
     }
 
     const blob = await response.blob();
@@ -44,6 +67,7 @@ export const reportsApi = {
     const url = window.URL.createObjectURL(blob);
 
     const link = document.createElement('a');
+
     link.href = url;
     link.download = 'expenses.csv';
 

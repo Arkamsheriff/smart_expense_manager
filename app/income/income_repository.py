@@ -3,7 +3,7 @@ from datetime import datetime
 
 import psycopg
 
-from app.database.connection import get_connection
+from app.database.connection import get_connection, DEFAULT_USER_ID
 from app.income.income import Income
 
 
@@ -29,9 +29,13 @@ class IncomeRepository:
                         description TEXT NOT NULL,
                         amount DOUBLE PRECISION NOT NULL,
                         category TEXT NOT NULL,
-                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        user_id UUID NOT NULL
                     )
                     """
+                )
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_incomes_user_id ON incomes(user_id)"
                 )
             else:
                 connection.execute(
@@ -41,9 +45,28 @@ class IncomeRepository:
                         description TEXT NOT NULL,
                         amount REAL NOT NULL,
                         category TEXT NOT NULL,
-                        created_at TEXT NOT NULL
+                        created_at TEXT NOT NULL,
+                        user_id TEXT
                     )
                     """
+                )
+
+                columns = connection.execute(
+                    "PRAGMA table_info(incomes)"
+                ).fetchall()
+
+                column_names = [
+                    column["name"]
+                    for column in columns
+                ]
+
+                if "user_id" not in column_names:
+                    connection.execute(
+                        "ALTER TABLE incomes ADD COLUMN user_id TEXT"
+                    )
+
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_incomes_user_id ON incomes(user_id)"
                 )
 
             connection.commit()
@@ -55,7 +78,7 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def add(self, income):
+    def add(self, income, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -66,16 +89,18 @@ class IncomeRepository:
                         description,
                         amount,
                         category,
-                        created_at
+                        created_at,
+                        user_id
                     )
-                    VALUES (%s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
                         income.description,
                         income.amount,
                         income.category,
-                        income.created_at
+                        income.created_at,
+                        user_id
                     )
                 )
 
@@ -88,15 +113,17 @@ class IncomeRepository:
                         description,
                         amount,
                         category,
-                        created_at
+                        created_at,
+                        user_id
                     )
-                    VALUES (?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
                     (
                         income.description,
                         income.amount,
                         income.category,
-                        income.created_at.isoformat()
+                        income.created_at.isoformat(),
+                        user_id
                     )
                 )
 
@@ -113,7 +140,7 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def get_by_id(self, income_id):
+    def get_by_id(self, income_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -121,11 +148,20 @@ class IncomeRepository:
 
             row = connection.execute(
                 f"""
-                SELECT id, description, amount, category, created_at
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
                 FROM incomes
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (income_id,)
+                (
+                    income_id,
+                    user_id
+                )
             ).fetchone()
 
             if row is None:
@@ -136,16 +172,25 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def get_all(self):
+    def get_all(self, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
+            placeholder = _placeholder(connection)
+
             rows = connection.execute(
-                """
-                SELECT id, description, amount, category, created_at
+                f"""
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
                 FROM incomes
+                WHERE user_id = {placeholder}
                 ORDER BY id
-                """
+                """,
+                (user_id,)
             ).fetchall()
 
             return self._convert_rows_to_incomes(rows)
@@ -153,7 +198,7 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def update(self, income):
+    def update(self, income, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -166,12 +211,14 @@ class IncomeRepository:
                     amount = {placeholder},
                     category = {placeholder}
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
                 (
                     income.description,
                     income.amount,
                     income.category,
-                    income.id
+                    income.id,
+                    user_id
                 )
             )
 
@@ -186,7 +233,7 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def delete(self, income_id):
+    def delete(self, income_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -196,8 +243,12 @@ class IncomeRepository:
                 f"""
                 DELETE FROM incomes
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (income_id,)
+                (
+                    income_id,
+                    user_id
+                )
             )
 
             connection.commit()
@@ -211,15 +262,19 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def total(self):
+    def total(self, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
+            placeholder = _placeholder(connection)
+
             row = connection.execute(
-                """
+                f"""
                 SELECT COALESCE(SUM(amount), 0) AS total
                 FROM incomes
-                """
+                WHERE user_id = {placeholder}
+                """,
+                (user_id,)
             ).fetchone()
 
             return row["total"]
@@ -227,30 +282,28 @@ class IncomeRepository:
         finally:
             connection.close()
 
-    def get_by_category(self, category):
+    def get_by_category(self, category, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
             placeholder = _placeholder(connection)
 
-            if _is_postgres(connection):
-                query = f"""
-                    SELECT id, description, amount, category, created_at
-                    FROM incomes
-                    WHERE LOWER(category) = LOWER({placeholder})
-                    ORDER BY created_at DESC
-                """
-            else:
-                query = f"""
-                    SELECT id, description, amount, category, created_at
-                    FROM incomes
-                    WHERE LOWER(category) = LOWER({placeholder})
-                    ORDER BY created_at DESC
-                """
-
             rows = connection.execute(
-                query,
-                (category,)
+                f"""
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
+                FROM incomes
+                WHERE LOWER(category) = LOWER({placeholder})
+                  AND user_id = {placeholder}
+                """,
+                (
+                    category,
+                    user_id
+                )
             ).fetchall()
 
             return self._convert_rows_to_incomes(rows)

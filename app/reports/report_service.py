@@ -3,13 +3,15 @@ from datetime import datetime, timedelta
 
 class ReportService:
 
-    def __init__(self, expense_manager):
+    def __init__(self, expense_manager, user_id=None):
         self.expense_manager = expense_manager
+        self.user_id = user_id
 
-    def today(self):
+    def today(self, user_id=None):
+        uid = user_id or self.user_id
         today = datetime.now().strftime("%Y-%m-%d")
 
-        return self.expense_manager.expenses_by_date(today)
+        return self.expense_manager.expenses_by_date(today, user_id=uid)
 
     def total_for_expenses(self, expenses):
         total = 0
@@ -19,11 +21,12 @@ class ReportService:
 
         return total
 
-    def this_week(self):
+    def this_week(self, user_id=None):
+        uid = user_id or self.user_id
         today = datetime.now()
         start_of_week = today - timedelta(days=today.weekday())
 
-        expenses = self.expense_manager.list_expenses()
+        expenses = self.expense_manager.list_expenses(user_id=uid)
 
         return [
             expense
@@ -31,10 +34,11 @@ class ReportService:
             if start_of_week.date() <= expense.created_at.date() <= today.date()
         ]
 
-    def this_month(self):
+    def this_month(self, user_id=None):
+        uid = user_id or self.user_id
         today = datetime.now()
 
-        expenses = self.expense_manager.list_expenses()
+        expenses = self.expense_manager.list_expenses(user_id=uid)
 
         return [
             expense

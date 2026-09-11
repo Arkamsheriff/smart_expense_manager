@@ -1,11 +1,11 @@
-def test_get_expenses_empty(client):
+def test_get_expenses_empty(client, test_db):
     response = client.get("/api/expenses")
 
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_create_expense(client):
+def test_create_expense(client, test_db):
     response = client.post(
         "/api/expenses",
         json={
@@ -26,7 +26,7 @@ def test_create_expense(client):
     assert "created_at" in data
 
 
-def test_get_expense(client):
+def test_get_expense(client, test_db):
     create_response = client.post(
         "/api/expenses",
         json={
@@ -40,7 +40,9 @@ def test_get_expense(client):
 
     expense_id = create_response.json()["id"]
 
-    response = client.get(f"/api/expenses/{expense_id}")
+    response = client.get(
+        f"/api/expenses/{expense_id}"
+    )
 
     assert response.status_code == 200
 
@@ -52,14 +54,16 @@ def test_get_expense(client):
     assert data["category"] == "Food"
 
 
-def test_get_expense_not_found(client):
-    response = client.get("/api/expenses/99999")
+def test_get_expense_not_found(client, test_db):
+    response = client.get(
+        "/api/expenses/99999"
+    )
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Expense not found"
 
 
-def test_update_expense(client):
+def test_update_expense(client, test_db):
     create_response = client.post(
         "/api/expenses",
         json={
@@ -92,7 +96,7 @@ def test_update_expense(client):
     assert data["category"] == "Food"
 
 
-def test_update_expense_not_found(client):
+def test_update_expense_not_found(client, test_db):
     response = client.put(
         "/api/expenses/99999",
         json={
@@ -106,7 +110,7 @@ def test_update_expense_not_found(client):
     assert response.json()["detail"] == "Expense not found"
 
 
-def test_delete_expense(client):
+def test_delete_expense(client, test_db):
     create_response = client.post(
         "/api/expenses",
         json={
@@ -120,24 +124,32 @@ def test_delete_expense(client):
 
     expense_id = create_response.json()["id"]
 
-    response = client.delete(f"/api/expenses/{expense_id}")
+    response = client.delete(
+        f"/api/expenses/{expense_id}"
+    )
 
     assert response.status_code == 200
-    assert response.json()["message"] == "Expense deleted successfully"
+    assert response.json()["message"] == (
+        "Expense deleted successfully"
+    )
 
-    get_response = client.get(f"/api/expenses/{expense_id}")
+    get_response = client.get(
+        f"/api/expenses/{expense_id}"
+    )
 
     assert get_response.status_code == 404
 
 
-def test_delete_expense_not_found(client):
-    response = client.delete("/api/expenses/99999")
+def test_delete_expense_not_found(client, test_db):
+    response = client.delete(
+        "/api/expenses/99999"
+    )
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Expense not found"
 
 
-def test_get_total_expenses(client):
+def test_get_total_expenses(client, test_db):
     client.post(
         "/api/expenses",
         json={
@@ -165,13 +177,15 @@ def test_get_total_expenses(client):
         },
     )
 
-    response = client.get("/api/expenses/total/summary")
+    response = client.get(
+        "/api/expenses/total/summary"
+    )
 
     assert response.status_code == 200
     assert response.json()["total"] == 800
 
 
-def test_get_category_total(client):
+def test_get_category_total(client, test_db):
     client.post(
         "/api/expenses",
         json={
@@ -199,7 +213,9 @@ def test_get_category_total(client):
         },
     )
 
-    response = client.get("/api/expenses/category/Food")
+    response = client.get(
+        "/api/expenses/category/Food"
+    )
 
     assert response.status_code == 200
 
@@ -209,7 +225,7 @@ def test_get_category_total(client):
     assert data["total"] == 650
 
 
-def test_search_expenses(client):
+def test_search_expenses(client, test_db):
     client.post(
         "/api/expenses",
         json={
@@ -228,17 +244,21 @@ def test_search_expenses(client):
         },
     )
 
-    response = client.get("/api/expenses/search/Lunch")
+    response = client.get(
+        "/api/expenses/search/Lunch"
+    )
 
     assert response.status_code == 200
 
     data = response.json()
 
     assert len(data) == 1
-    assert data[0]["description"] == "Lunch at restaurant"
+    assert data[0]["description"] == (
+        "Lunch at restaurant"
+    )
 
 
-def test_filter_by_category(client):
+def test_filter_by_category(client, test_db):
     client.post(
         "/api/expenses",
         json={
@@ -266,7 +286,9 @@ def test_filter_by_category(client):
         },
     )
 
-    response = client.get("/api/expenses/filter/category/Food")
+    response = client.get(
+        "/api/expenses/filter/category/Food"
+    )
 
     assert response.status_code == 200
 
@@ -274,12 +296,18 @@ def test_filter_by_category(client):
 
     assert len(data) == 2
 
-    categories = [expense["category"] for expense in data]
+    categories = [
+        expense["category"]
+        for expense in data
+    ]
 
-    assert all(category == "Food" for category in categories)
+    assert all(
+        category == "Food"
+        for category in categories
+    )
 
 
-def test_filter_by_amount(client):
+def test_filter_by_amount(client, test_db):
     client.post(
         "/api/expenses",
         json={
@@ -324,7 +352,10 @@ def test_filter_by_amount(client):
     assert data[0]["amount"] == 250
 
 
-def test_filter_by_amount_negative_values(client):
+def test_filter_by_amount_negative_values(
+    client,
+    test_db
+):
     response = client.get(
         "/api/expenses/filter/amount",
         params={
@@ -334,10 +365,15 @@ def test_filter_by_amount_negative_values(client):
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "Amounts cannot be negative"
+    assert response.json()["detail"] == (
+        "Amounts cannot be negative"
+    )
 
 
-def test_filter_by_amount_minimum_greater_than_maximum(client):
+def test_filter_by_amount_minimum_greater_than_maximum(
+    client,
+    test_db
+):
     response = client.get(
         "/api/expenses/filter/amount",
         params={
@@ -352,7 +388,10 @@ def test_filter_by_amount_minimum_greater_than_maximum(client):
     )
 
 
-def test_create_expense_validation(client):
+def test_create_expense_validation(
+    client,
+    test_db
+):
     response = client.post(
         "/api/expenses",
         json={
@@ -365,7 +404,10 @@ def test_create_expense_validation(client):
     assert response.status_code == 422
 
 
-def test_create_expense_invalid_amount(client):
+def test_create_expense_invalid_amount(
+    client,
+    test_db
+):
     response = client.post(
         "/api/expenses",
         json={
@@ -376,3 +418,29 @@ def test_create_expense_invalid_amount(client):
     )
 
     assert response.status_code == 422
+
+
+def test_expenses_are_user_scoped(
+    client,
+    test_db
+):
+    # The authenticated client represents TEST_USER_ID.
+    client.post(
+        "/api/expenses",
+        json={
+            "description": "Private Expense",
+            "amount": 500,
+            "category": "Food",
+        },
+    )
+
+    response = client.get(
+        "/api/expenses"
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["description"] == "Private Expense"

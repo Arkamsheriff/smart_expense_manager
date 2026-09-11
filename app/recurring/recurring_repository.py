@@ -2,7 +2,7 @@ import sqlite3
 
 import psycopg
 
-from app.database.connection import get_connection
+from app.database.connection import get_connection, DEFAULT_USER_ID
 from app.recurring.recurring_expense import RecurringExpense
 
 
@@ -34,9 +34,13 @@ class RecurringExpenseRepository:
                         frequency TEXT NOT NULL,
                         start_date DATE NOT NULL,
                         end_date DATE,
-                        active BOOLEAN NOT NULL DEFAULT TRUE
+                        active BOOLEAN NOT NULL DEFAULT TRUE,
+                        user_id UUID NOT NULL
                     )
                     """
+                )
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_recurring_user_id ON recurring_expenses(user_id)"
                 )
             else:
                 connection.execute(
@@ -49,9 +53,30 @@ class RecurringExpenseRepository:
                         frequency TEXT NOT NULL,
                         start_date TEXT NOT NULL,
                         end_date TEXT,
-                        active INTEGER NOT NULL DEFAULT 1
+                        active INTEGER NOT NULL DEFAULT 1,
+                        user_id TEXT
                     )
                     """
+                )
+
+                # Existing SQLite databases may already have
+                # the table without user_id.
+                columns = connection.execute(
+                    "PRAGMA table_info(recurring_expenses)"
+                ).fetchall()
+
+                column_names = [
+                    column["name"]
+                    for column in columns
+                ]
+
+                if "user_id" not in column_names:
+                    connection.execute(
+                        "ALTER TABLE recurring_expenses ADD COLUMN user_id TEXT"
+                    )
+
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_recurring_user_id ON recurring_expenses(user_id)"
                 )
 
             connection.commit()
@@ -63,7 +88,7 @@ class RecurringExpenseRepository:
         finally:
             connection.close()
 
-    def add(self, recurring_expense):
+    def add(self, recurring_expense, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -77,9 +102,10 @@ class RecurringExpenseRepository:
                         frequency,
                         start_date,
                         end_date,
-                        active
+                        active,
+                        user_id
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -89,7 +115,8 @@ class RecurringExpenseRepository:
                         recurring_expense.frequency,
                         recurring_expense.start_date,
                         recurring_expense.end_date,
-                        recurring_expense.active
+                        recurring_expense.active,
+                        user_id
                     )
                 )
 
@@ -105,9 +132,10 @@ class RecurringExpenseRepository:
                         frequency,
                         start_date,
                         end_date,
-                        active
+                        active,
+                        user_id
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         recurring_expense.description,
@@ -116,7 +144,8 @@ class RecurringExpenseRepository:
                         recurring_expense.frequency,
                         recurring_expense.start_date,
                         recurring_expense.end_date,
-                        int(recurring_expense.active)
+                        int(recurring_expense.active),
+                        user_id
                     )
                 )
 
@@ -133,7 +162,7 @@ class RecurringExpenseRepository:
         finally:
             connection.close()
 
-    def get(self, recurring_expense_id):
+    def get(self, recurring_expense_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -152,8 +181,12 @@ class RecurringExpenseRepository:
                     active
                 FROM recurring_expenses
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (recurring_expense_id,)
+                (
+                    recurring_expense_id,
+                    user_id
+                )
             ).fetchone()
 
             if row is None:
@@ -164,12 +197,14 @@ class RecurringExpenseRepository:
         finally:
             connection.close()
 
-    def get_all(self):
+    def get_all(self, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
+            placeholder = _placeholder(connection)
+
             rows = connection.execute(
-                """
+                f"""
                 SELECT
                     id,
                     description,
@@ -180,8 +215,10 @@ class RecurringExpenseRepository:
                     end_date,
                     active
                 FROM recurring_expenses
+                WHERE user_id = {placeholder}
                 ORDER BY id
-                """
+                """,
+                (user_id,)
             ).fetchall()
 
             return [
@@ -192,7 +229,7 @@ class RecurringExpenseRepository:
         finally:
             connection.close()
 
-    def update(self, recurring_expense):
+    def update(self, recurring_expense, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -216,6 +253,7 @@ class RecurringExpenseRepository:
                     end_date = {placeholder},
                     active = {placeholder}
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
                 (
                     recurring_expense.description,
@@ -225,7 +263,8 @@ class RecurringExpenseRepository:
                     recurring_expense.start_date,
                     recurring_expense.end_date,
                     active_value,
-                    recurring_expense.id
+                    recurring_expense.id,
+                    user_id
                 )
             )
 
@@ -240,7 +279,7 @@ class RecurringExpenseRepository:
         finally:
             connection.close()
 
-    def delete(self, recurring_expense_id):
+    def delete(self, recurring_expense_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -250,8 +289,12 @@ class RecurringExpenseRepository:
                 f"""
                 DELETE FROM recurring_expenses
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (recurring_expense_id,)
+                (
+                    recurring_expense_id,
+                    user_id
+                )
             )
 
             connection.commit()

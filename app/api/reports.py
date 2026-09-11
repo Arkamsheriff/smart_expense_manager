@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
 from io import StringIO
 import csv
+import sqlite3
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
+from app.api.auth import CurrentUser
 from app.database.connection import get_connection
 
 
@@ -29,16 +31,24 @@ def row_to_expense(row) -> dict:
     }
 
 
-def get_all_expenses() -> list[dict]:
+def get_all_expenses(user_id: str) -> list[dict]:
     connection = get_connection()
 
     try:
+        # SQLite uses ?, PostgreSQL uses %s.
+        placeholder = "?" if isinstance(
+            connection,
+            sqlite3.Connection
+        ) else "%s"
+
         rows = connection.execute(
-            """
+            f"""
             SELECT id, description, amount, category, created_at
             FROM expenses
+            WHERE user_id = {placeholder}
             ORDER BY created_at DESC
-            """
+            """,
+            (user_id,),
         ).fetchall()
 
         return [row_to_expense(row) for row in rows]
@@ -73,18 +83,29 @@ def parse_created_at(value) -> datetime:
     return parsed.replace(tzinfo=None) if parsed.tzinfo else parsed
 
 
-def period_report(start: datetime, end: datetime | None = None) -> dict:
-    expenses = get_all_expenses()
+def period_report(
+    user_id: str,
+    start: datetime,
+    end: datetime | None = None,
+) -> dict:
+    expenses = get_all_expenses(user_id)
 
     filtered = []
 
     for expense in expenses:
-        created_at = parse_created_at(expense["created_at"])
+        created_at = parse_created_at(
+            expense["created_at"]
+        )
 
-        if created_at >= start and (end is None or created_at < end):
+        if created_at >= start and (
+            end is None or created_at < end
+        ):
             filtered.append(expense)
 
-    total = sum(expense["amount"] for expense in filtered)
+    total = sum(
+        expense["amount"]
+        for expense in filtered
+    )
 
     return {
         "expenses": filtered,
@@ -93,7 +114,9 @@ def period_report(start: datetime, end: datetime | None = None) -> dict:
 
 
 @router.get("/today")
-def today_report():
+def today_report(current_user: CurrentUser):
+    user_id = current_user["id"]
+
     now = datetime.now()
 
     start = now.replace(
@@ -105,11 +128,17 @@ def today_report():
 
     end = start + timedelta(days=1)
 
-    return period_report(start, end)
+    return period_report(
+        user_id,
+        start,
+        end,
+    )
 
 
 @router.get("/weekly")
-def weekly_report():
+def weekly_report(current_user: CurrentUser):
+    user_id = current_user["id"]
+
     now = datetime.now()
 
     start = now.replace(
@@ -122,15 +151,23 @@ def weekly_report():
     # Sunday-based week, matching the frontend's previous mock behaviour.
     days_since_sunday = (start.weekday() + 1) % 7
 
-    start = start - timedelta(days=days_since_sunday)
+    start = start - timedelta(
+        days=days_since_sunday
+    )
 
     end = start + timedelta(days=7)
 
-    return period_report(start, end)
+    return period_report(
+        user_id,
+        start,
+        end,
+    )
 
 
 @router.get("/monthly")
-def monthly_report():
+def monthly_report(current_user: CurrentUser):
+    user_id = current_user["id"]
+
     now = datetime.now()
 
     start = now.replace(
@@ -151,12 +188,18 @@ def monthly_report():
             month=start.month + 1,
         )
 
-    return period_report(start, end)
+    return period_report(
+        user_id,
+        start,
+        end,
+    )
 
 
 @router.get("/category-summary")
-def category_summary():
-    expenses = get_all_expenses()
+def category_summary(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    expenses = get_all_expenses(user_id)
 
     totals: dict[str, dict[str, float | int]] = {}
 
@@ -207,8 +250,10 @@ def category_summary():
 
 
 @router.get("/statistics")
-def spending_statistics():
-    expenses = get_all_expenses()
+def spending_statistics(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    expenses = get_all_expenses(user_id)
 
     amounts = [
         expense["amount"]
@@ -229,15 +274,26 @@ def spending_statistics():
     return {
         "count": len(amounts),
         "total": round(total, 2),
-        "average": round(total / len(amounts), 2),
-        "highest": round(max(amounts), 2),
-        "lowest": round(min(amounts), 2),
+        "average": round(
+            total / len(amounts),
+            2,
+        ),
+        "highest": round(
+            max(amounts),
+            2,
+        ),
+        "lowest": round(
+            min(amounts),
+            2,
+        ),
     }
 
 
 @router.get("/monthly-series")
-def monthly_spending_series():
-    expenses = get_all_expenses()
+def monthly_spending_series(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    expenses = get_all_expenses(user_id)
 
     now = datetime.now()
 
@@ -298,8 +354,10 @@ def monthly_spending_series():
 
 
 @router.get("/export-csv")
-def export_csv():
-    expenses = get_all_expenses()
+def export_csv(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    expenses = get_all_expenses(user_id)
 
     output = StringIO()
 

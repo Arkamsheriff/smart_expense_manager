@@ -130,7 +130,7 @@ def test_dashboard_income_vs_expenses_by_month(client):
 
 def test_dashboard_with_budget(client):
     budget_payload = {
-        "category": "2026-09",
+        "category": "Housing",
         "amount": 30000,
         "period": "monthly"
     }
@@ -154,6 +154,7 @@ def test_dashboard_with_budget(client):
 
     budget = data["budgets"][0]
 
+    assert budget["category"] == "Housing"
     assert budget["amount"] == 30000
     assert budget["spent"] == 10000
     assert budget["remaining"] == 20000

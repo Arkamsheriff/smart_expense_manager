@@ -3,7 +3,7 @@ from datetime import datetime
 
 import psycopg
 
-from app.database.connection import get_connection
+from app.database.connection import get_connection, DEFAULT_USER_ID
 from app.expense import Expense
 
 
@@ -33,10 +33,12 @@ def initialize_database():
                     description TEXT NOT NULL,
                     amount DOUBLE PRECISION NOT NULL,
                     category TEXT NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    user_id UUID NOT NULL
                 )
                 """
             )
+
         else:
             connection.execute(
                 """
@@ -45,9 +47,35 @@ def initialize_database():
                     description TEXT NOT NULL,
                     amount REAL NOT NULL,
                     category TEXT NOT NULL,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    user_id TEXT
                 )
                 """
+            )
+
+            # Existing local SQLite databases may already have
+            # the expenses table without user_id.
+            columns = connection.execute(
+                "PRAGMA table_info(expenses)"
+            ).fetchall()
+
+            column_names = [column["name"] for column in columns]
+
+            if "user_id" not in column_names:
+                connection.execute(
+                    "ALTER TABLE expenses ADD COLUMN user_id TEXT"
+                )
+
+        if _is_postgres(connection):
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_expenses_user_id ON expenses(user_id)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_expenses_user_created ON expenses(user_id, created_at)"
+            )
+        else:
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_expenses_user_id ON expenses(user_id)"
             )
 
         connection.commit()
@@ -62,7 +90,10 @@ def initialize_database():
 
 class ExpenseRepository:
 
-    def add(self, expense):
+    def initialize_table(self):
+        initialize_database()
+
+    def add(self, expense, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -73,9 +104,10 @@ class ExpenseRepository:
                         description,
                         amount,
                         category,
-                        created_at
+                        created_at,
+                        user_id
                     )
-                    VALUES (%s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -83,6 +115,7 @@ class ExpenseRepository:
                         expense.amount,
                         expense.category,
                         expense.created_at,
+                        user_id,
                     )
                 )
 
@@ -95,15 +128,17 @@ class ExpenseRepository:
                         description,
                         amount,
                         category,
-                        created_at
+                        created_at,
+                        user_id
                     )
-                    VALUES (?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
                     (
                         expense.description,
                         expense.amount,
                         expense.category,
-                        expense.created_at.isoformat()
+                        expense.created_at.isoformat(),
+                        user_id,
                     )
                 )
 
@@ -120,16 +155,25 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def get_all(self):
+    def get_all(self, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
+            placeholder = _placeholder(connection)
+
             rows = connection.execute(
-                """
-                SELECT id, description, amount, category, created_at
+                f"""
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
                 FROM expenses
+                WHERE user_id = {placeholder}
                 ORDER BY id
-                """
+                """,
+                (user_id,)
             ).fetchall()
 
             return self._convert_rows_to_expenses(rows)
@@ -137,7 +181,36 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def update(self, expense):
+    def get_by_id(self, expense_id, user_id=DEFAULT_USER_ID):
+        connection = get_connection()
+
+        try:
+            placeholder = _placeholder(connection)
+
+            row = connection.execute(
+                f"""
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
+                FROM expenses
+                WHERE id = {placeholder}
+                  AND user_id = {placeholder}
+                """,
+                (expense_id, user_id)
+            ).fetchone()
+
+            if not row:
+                return None
+
+            return self._convert_rows_to_expenses([row])[0]
+
+        finally:
+            connection.close()
+
+    def update(self, expense, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -150,12 +223,14 @@ class ExpenseRepository:
                     amount = {placeholder},
                     category = {placeholder}
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
                 (
                     expense.description,
                     expense.amount,
                     expense.category,
-                    expense.id
+                    expense.id,
+                    user_id,
                 )
             )
 
@@ -170,7 +245,7 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def delete(self, expense_id):
+    def delete(self, expense_id, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -180,8 +255,12 @@ class ExpenseRepository:
                 f"""
                 DELETE FROM expenses
                 WHERE id = {placeholder}
+                  AND user_id = {placeholder}
                 """,
-                (expense_id,)
+                (
+                    expense_id,
+                    user_id,
+                )
             )
 
             connection.commit()
@@ -195,7 +274,7 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def get_by_date(self, date):
+    def get_by_date(self, date, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -203,22 +282,37 @@ class ExpenseRepository:
 
             if _is_postgres(connection):
                 query = f"""
-                    SELECT id, description, amount, category, created_at
+                    SELECT
+                        id,
+                        description,
+                        amount,
+                        category,
+                        created_at
                     FROM expenses
                     WHERE created_at::date = {placeholder}
+                      AND user_id = {placeholder}
                     ORDER BY id
                 """
             else:
                 query = f"""
-                    SELECT id, description, amount, category, created_at
+                    SELECT
+                        id,
+                        description,
+                        amount,
+                        category,
+                        created_at
                     FROM expenses
                     WHERE DATE(created_at) = {placeholder}
+                      AND user_id = {placeholder}
                     ORDER BY id
                 """
 
             rows = connection.execute(
                 query,
-                (date,)
+                (
+                    date,
+                    user_id,
+                )
             ).fetchall()
 
             return self._convert_rows_to_expenses(rows)
@@ -226,7 +320,7 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def search_by_description(self, keyword):
+    def search_by_description(self, keyword, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -234,22 +328,37 @@ class ExpenseRepository:
 
             if _is_postgres(connection):
                 query = f"""
-                    SELECT id, description, amount, category, created_at
+                    SELECT
+                        id,
+                        description,
+                        amount,
+                        category,
+                        created_at
                     FROM expenses
                     WHERE description ILIKE {placeholder}
+                      AND user_id = {placeholder}
                     ORDER BY created_at DESC
                 """
             else:
                 query = f"""
-                    SELECT id, description, amount, category, created_at
+                    SELECT
+                        id,
+                        description,
+                        amount,
+                        category,
+                        created_at
                     FROM expenses
                     WHERE description LIKE {placeholder}
+                      AND user_id = {placeholder}
                     ORDER BY created_at DESC
                 """
 
             rows = connection.execute(
                 query,
-                (f"%{keyword}%",)
+                (
+                    f"%{keyword}%",
+                    user_id,
+                )
             ).fetchall()
 
             return self._convert_rows_to_expenses(rows)
@@ -257,7 +366,7 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def filter_by_category(self, category):
+    def filter_by_category(self, category, user_id=DEFAULT_USER_ID):
         connection = get_connection()
 
         try:
@@ -265,12 +374,21 @@ class ExpenseRepository:
 
             rows = connection.execute(
                 f"""
-                SELECT id, description, amount, category, created_at
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
                 FROM expenses
                 WHERE LOWER(category) = LOWER({placeholder})
+                  AND user_id = {placeholder}
                 ORDER BY created_at DESC
                 """,
-                (category,)
+                (
+                    category,
+                    user_id,
+                )
             ).fetchall()
 
             return self._convert_rows_to_expenses(rows)
@@ -278,7 +396,12 @@ class ExpenseRepository:
         finally:
             connection.close()
 
-    def filter_by_amount_range(self, minimum, maximum):
+    def filter_by_amount_range(
+        self,
+        minimum,
+        maximum,
+        user_id=DEFAULT_USER_ID
+    ):
         connection = get_connection()
 
         try:
@@ -286,12 +409,22 @@ class ExpenseRepository:
 
             rows = connection.execute(
                 f"""
-                SELECT id, description, amount, category, created_at
+                SELECT
+                    id,
+                    description,
+                    amount,
+                    category,
+                    created_at
                 FROM expenses
                 WHERE amount BETWEEN {placeholder} AND {placeholder}
+                  AND user_id = {placeholder}
                 ORDER BY amount ASC
                 """,
-                (minimum, maximum)
+                (
+                    minimum,
+                    maximum,
+                    user_id,
+                )
             ).fetchall()
 
             return self._convert_rows_to_expenses(rows)

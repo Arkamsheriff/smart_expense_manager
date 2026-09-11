@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.api.auth import CurrentUser
 from app.recurring.recurring_manager import RecurringExpenseManager
 
 
@@ -43,14 +44,34 @@ class RecurringExpenseResponse(BaseModel):
     active: bool
 
 
-@router.get("", response_model=list[RecurringExpenseResponse])
-def get_recurring_expenses():
-    return manager.get_all_recurring_expenses()
+@router.get(
+    "",
+    response_model=list[RecurringExpenseResponse]
+)
+def get_recurring_expenses(
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    return manager.get_all_recurring_expenses(
+        user_id
+    )
 
 
-@router.get("/{expense_id}", response_model=RecurringExpenseResponse)
-def get_recurring_expense(expense_id: int):
-    expense = manager.get_recurring_expense(expense_id)
+@router.get(
+    "/{expense_id}",
+    response_model=RecurringExpenseResponse
+)
+def get_recurring_expense(
+    expense_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    expense = manager.get_recurring_expense(
+        user_id,
+        expense_id
+    )
 
     if expense is None:
         raise HTTPException(
@@ -61,10 +82,19 @@ def get_recurring_expense(expense_id: int):
     return expense
 
 
-@router.post("", response_model=RecurringExpenseResponse)
-def create_recurring_expense(data: RecurringExpenseCreate):
+@router.post(
+    "",
+    response_model=RecurringExpenseResponse
+)
+def create_recurring_expense(
+    data: RecurringExpenseCreate,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
     try:
         return manager.create_recurring_expense(
+            user_id=user_id,
             description=data.description,
             amount=data.amount,
             category=data.category,
@@ -73,6 +103,7 @@ def create_recurring_expense(data: RecurringExpenseCreate):
             end_date=data.end_date,
             active=data.active
         )
+
     except ValueError as e:
         raise HTTPException(
             status_code=400,
@@ -80,13 +111,20 @@ def create_recurring_expense(data: RecurringExpenseCreate):
         )
 
 
-@router.put("/{expense_id}", response_model=RecurringExpenseResponse)
+@router.put(
+    "/{expense_id}",
+    response_model=RecurringExpenseResponse
+)
 def update_recurring_expense(
     expense_id: int,
-    data: RecurringExpenseUpdate
+    data: RecurringExpenseUpdate,
+    current_user: CurrentUser
 ):
+    user_id = current_user["id"]
+
     try:
         updated = manager.update_recurring_expense(
+            user_id=user_id,
             expense_id=expense_id,
             description=data.description,
             amount=data.amount,
@@ -103,7 +141,18 @@ def update_recurring_expense(
                 detail="Recurring expense not found"
             )
 
-        return manager.get_recurring_expense(expense_id)
+        expense = manager.get_recurring_expense(
+            user_id,
+            expense_id
+        )
+
+        if expense is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Recurring expense not found"
+            )
+
+        return expense
 
     except ValueError as e:
         raise HTTPException(
@@ -113,8 +162,16 @@ def update_recurring_expense(
 
 
 @router.delete("/{expense_id}")
-def delete_recurring_expense(expense_id: int):
-    deleted = manager.delete_recurring_expense(expense_id)
+def delete_recurring_expense(
+    expense_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    deleted = manager.delete_recurring_expense(
+        user_id,
+        expense_id
+    )
 
     if not deleted:
         raise HTTPException(
@@ -127,9 +184,20 @@ def delete_recurring_expense(expense_id: int):
     }
 
 
-@router.patch("/{expense_id}/toggle", response_model=RecurringExpenseResponse)
-def toggle_recurring_expense(expense_id: int):
-    updated = manager.toggle_active(expense_id)
+@router.patch(
+    "/{expense_id}/toggle",
+    response_model=RecurringExpenseResponse
+)
+def toggle_recurring_expense(
+    expense_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    updated = manager.toggle_active(
+        user_id,
+        expense_id
+    )
 
     if not updated:
         raise HTTPException(
@@ -137,15 +205,10 @@ def toggle_recurring_expense(expense_id: int):
             detail="Recurring expense not found"
         )
 
-    return manager.get_recurring_expense(expense_id)
-
-
-@router.get(
-    "/{expense_id}/next-due",
-    response_model=str | None
-)
-def get_next_due_date(expense_id: int):
-    expense = manager.get_recurring_expense(expense_id)
+    expense = manager.get_recurring_expense(
+        user_id,
+        expense_id
+    )
 
     if expense is None:
         raise HTTPException(
@@ -153,4 +216,31 @@ def get_next_due_date(expense_id: int):
             detail="Recurring expense not found"
         )
 
-    return manager.get_next_due_date(expense_id)
+    return expense
+
+
+@router.get(
+    "/{expense_id}/next-due",
+    response_model=str | None
+)
+def get_next_due_date(
+    expense_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    expense = manager.get_recurring_expense(
+        user_id,
+        expense_id
+    )
+
+    if expense is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Recurring expense not found"
+        )
+
+    return manager.get_next_due_date(
+        user_id,
+        expense_id
+    )

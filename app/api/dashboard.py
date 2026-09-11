@@ -1,8 +1,8 @@
-from datetime import datetime
 from collections import defaultdict
 
 from fastapi import APIRouter
 
+from app.api.auth import CurrentUser
 from app.expense_manager import ExpenseManager
 from app.income.income_manager import IncomeManager
 from app.budget.budget_manager import BudgetManager
@@ -17,15 +17,21 @@ router = APIRouter(
 
 
 @router.get("/summary")
-def dashboard_summary():
+def dashboard_summary(current_user: CurrentUser):
+    user_id = current_user["id"]
+
     expense_manager = ExpenseManager()
     income_manager = IncomeManager()
     budget_manager = BudgetManager()
     goal_manager = GoalManager()
     recurring_manager = RecurringExpenseManager()
 
-    expenses = expense_manager.list_expenses()
-    incomes = income_manager.get_all_income()
+    # ---------------------------------------------------------
+    # Expenses and Income
+    # ---------------------------------------------------------
+
+    expenses = expense_manager.list_expenses(user_id)
+    incomes = income_manager.get_all_income(user_id)
 
     total_expenses = sum(e.amount for e in expenses)
     total_income = sum(i.amount for i in incomes)
@@ -38,21 +44,30 @@ def dashboard_summary():
         else 0
     )
 
-    # Recent expenses
+    # ---------------------------------------------------------
+    # Recent Expenses
+    # ---------------------------------------------------------
+
     recent_expenses = sorted(
         expenses,
         key=lambda e: e.created_at,
         reverse=True
     )[:5]
 
-    # Recent income
+    # ---------------------------------------------------------
+    # Recent Income
+    # ---------------------------------------------------------
+
     recent_income = sorted(
         incomes,
         key=lambda i: i.created_at,
         reverse=True
     )[:5]
 
-    # Expense by category
+    # ---------------------------------------------------------
+    # Expense by Category
+    # ---------------------------------------------------------
+
     category_totals = defaultdict(float)
 
     for expense in expenses:
@@ -66,7 +81,10 @@ def dashboard_summary():
         for category, total in category_totals.items()
     ]
 
-    # Income vs expenses by month
+    # ---------------------------------------------------------
+    # Income vs Expenses by Month
+    # ---------------------------------------------------------
+
     monthly_data = defaultdict(
         lambda: {
             "income": 0.0,
@@ -91,18 +109,28 @@ def dashboard_summary():
         for month, values in sorted(monthly_data.items())
     ]
 
+    # ---------------------------------------------------------
     # Budgets
-    budgets = budget_manager.get_all_budgets()
+    # ---------------------------------------------------------
+
+    budgets = budget_manager.get_all_budgets(user_id)
 
     dashboard_budgets = []
 
     for budget in budgets:
-        month_expenses = [
-            e for e in expenses
-            if e.created_at.strftime("%Y-%m") == budget.month
+        # Budget.month is currently used as the category field
+        budget_category = budget.month
+
+        category_expenses = [
+            expense
+            for expense in expenses
+            if expense.category.lower() == budget_category.lower()
         ]
 
-        spent = sum(e.amount for e in month_expenses)
+        spent = sum(
+            expense.amount
+            for expense in category_expenses
+        )
 
         percent_used = (
             (spent / budget.amount) * 100
@@ -113,7 +141,7 @@ def dashboard_summary():
         dashboard_budgets.append(
             {
                 "id": budget.id,
-                "category": "All Categories",
+                "category": budget_category,
                 "amount": budget.amount,
                 "period": "monthly",
                 "spent": spent,
@@ -122,12 +150,16 @@ def dashboard_summary():
             }
         )
 
+    # ---------------------------------------------------------
     # Goals
-    goals = goal_manager.get_all_goals()
+    # ---------------------------------------------------------
+
+    goals = goal_manager.get_all_goals(user_id)
 
     dashboard_goals = []
 
     for goal in goals:
+
         if goal.target_amount > 0:
             percent_complete = (
                 goal.current_amount /
@@ -163,18 +195,23 @@ def dashboard_summary():
             }
         )
 
-    # Upcoming recurring expenses
+    # ---------------------------------------------------------
+    # Upcoming Recurring Expenses
+    # ---------------------------------------------------------
+
     recurring_expenses = (
-        recurring_manager.get_all_recurring_expenses()
+        recurring_manager.get_all_recurring_expenses(user_id)
     )
 
     upcoming_recurring = []
 
     for recurring in recurring_expenses:
+
         if not recurring.active:
             continue
 
         next_due_date = recurring_manager.get_next_due_date(
+            user_id,
             recurring.id
         )
 
@@ -194,37 +231,48 @@ def dashboard_summary():
 
     upcoming_recurring = sorted(
         upcoming_recurring,
-        key=lambda r: r["next_due_date"] or ""
+        key=lambda recurring: recurring["next_due_date"] or ""
     )[:5]
+
+    # ---------------------------------------------------------
+    # Final Dashboard Response
+    # ---------------------------------------------------------
 
     return {
         "totalIncome": total_income,
         "totalExpenses": total_expenses,
         "currentBalance": current_balance,
         "savingsRate": savings_rate,
+
         "recentExpenses": [
             {
-                "id": e.id,
-                "description": e.description,
-                "amount": e.amount,
-                "category": e.category,
-                "created_at": e.created_at.isoformat()
+                "id": expense.id,
+                "description": expense.description,
+                "amount": expense.amount,
+                "category": expense.category,
+                "created_at": expense.created_at.isoformat()
             }
-            for e in recent_expenses
+            for expense in recent_expenses
         ],
+
         "recentIncome": [
             {
-                "id": i.id,
-                "description": i.description,
-                "amount": i.amount,
-                "category": i.category,
-                "created_at": i.created_at.isoformat()
+                "id": income.id,
+                "source": income.description,
+                "amount": income.amount,
+                "category": income.category,
+                "received_at": income.created_at.isoformat()
             }
-            for i in recent_income
+            for income in recent_income
         ],
+
         "upcomingRecurring": upcoming_recurring,
+
         "goals": dashboard_goals,
+
         "budgets": dashboard_budgets,
+
         "expenseByCategory": expense_by_category,
+
         "incomeVsExpenseByMonth": income_vs_expense_by_month
     }

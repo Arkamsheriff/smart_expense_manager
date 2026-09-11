@@ -4,6 +4,7 @@ import psycopg
 
 from app.budget.budget_manager import BudgetManager
 from app.database.connection import get_connection
+from app.api.auth import CurrentUser
 
 
 router = APIRouter(
@@ -36,7 +37,7 @@ class BudgetResponse(BaseModel):
     percentUsed: float
 
 
-def build_budget_response(budget):
+def build_budget_response(budget, user_id):
     connection = get_connection()
 
     try:
@@ -51,8 +52,12 @@ def build_budget_response(budget):
             SELECT COALESCE(SUM(amount), 0) AS spent
             FROM expenses
             WHERE LOWER(category) = LOWER({placeholder})
+              AND user_id = {placeholder}
             """,
-            (budget.month,)
+            (
+                budget.month,
+                user_id
+            )
         ).fetchone()
 
         spent = float(row["spent"] or 0)
@@ -60,10 +65,12 @@ def build_budget_response(budget):
     finally:
         connection.close()
 
-    remaining = budget.amount - spent
+    remaining = float(budget.amount) - spent
 
     if budget.amount > 0:
-        percent_used = (spent / budget.amount) * 100
+        percent_used = (
+            spent / float(budget.amount)
+        ) * 100
     else:
         percent_used = 0
 
@@ -79,22 +86,35 @@ def build_budget_response(budget):
 
 
 @router.get("", response_model=list[BudgetResponse])
-def get_budgets():
-    budgets = manager.get_all_budgets()
+def get_budgets(current_user: CurrentUser):
+    user_id = current_user["id"]
+
+    budgets = manager.get_all_budgets(user_id)
 
     return [
-        build_budget_response(budget)
+        build_budget_response(
+            budget,
+            user_id
+        )
         for budget in budgets
     ]
 
 
 @router.get("/{budget_id}", response_model=BudgetResponse)
-def get_budget(budget_id: int):
-    budgets = manager.get_all_budgets()
+def get_budget(
+    budget_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
+
+    budgets = manager.get_all_budgets(user_id)
 
     for budget in budgets:
         if budget.id == budget_id:
-            return build_budget_response(budget)
+            return build_budget_response(
+                budget,
+                user_id
+            )
 
     raise HTTPException(
         status_code=404,
@@ -103,7 +123,11 @@ def get_budget(budget_id: int):
 
 
 @router.post("", response_model=BudgetResponse)
-def create_budget(data: BudgetCreate):
+def create_budget(
+    data: BudgetCreate,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
 
     if data.amount <= 0:
         raise HTTPException(
@@ -117,13 +141,25 @@ def create_budget(data: BudgetCreate):
             detail="Only monthly budgets are currently supported"
         )
 
+    category = data.category.strip()
+
+    if not category:
+        raise HTTPException(
+            status_code=400,
+            detail="Budget category cannot be empty"
+        )
+
     try:
         budget = manager.set_budget(
-            month=data.category.strip(),
+            user_id=user_id,
+            month=category,
             amount=data.amount
         )
 
-        return build_budget_response(budget)
+        return build_budget_response(
+            budget,
+            user_id
+        )
 
     except Exception as e:
         raise HTTPException(
@@ -135,8 +171,10 @@ def create_budget(data: BudgetCreate):
 @router.put("/{budget_id}", response_model=BudgetResponse)
 def update_budget(
     budget_id: int,
-    data: BudgetUpdate
+    data: BudgetUpdate,
+    current_user: CurrentUser
 ):
+    user_id = current_user["id"]
 
     if data.amount <= 0:
         raise HTTPException(
@@ -144,7 +182,13 @@ def update_budget(
             detail="Budget amount must be greater than 0"
         )
 
-    budgets = manager.get_all_budgets()
+    if data.period.lower() != "monthly":
+        raise HTTPException(
+            status_code=400,
+            detail="Only monthly budgets are currently supported"
+        )
+
+    budgets = manager.get_all_budgets(user_id)
 
     existing = None
 
@@ -159,10 +203,19 @@ def update_budget(
             detail="Budget not found"
         )
 
+    category = data.category.strip()
+
+    if not category:
+        raise HTTPException(
+            status_code=400,
+            detail="Budget category cannot be empty"
+        )
+
     try:
         updated = manager.update_budget(
+            user_id=user_id,
             budget_id=budget_id,
-            month=data.category.strip(),
+            month=category,
             amount=data.amount
         )
 
@@ -172,7 +225,10 @@ def update_budget(
                 detail="Budget not found"
             )
 
-        updated_budget = manager.get_budget(data.category.strip())
+        updated_budget = manager.get_budget(
+            user_id,
+            category
+        )
 
         if updated_budget is None:
             raise HTTPException(
@@ -180,7 +236,10 @@ def update_budget(
                 detail="Updated budget not found"
             )
 
-        return build_budget_response(updated_budget)
+        return build_budget_response(
+            updated_budget,
+            user_id
+        )
 
     except HTTPException:
         raise
@@ -193,9 +252,16 @@ def update_budget(
 
 
 @router.delete("/{budget_id}")
-def delete_budget(budget_id: int):
+def delete_budget(
+    budget_id: int,
+    current_user: CurrentUser
+):
+    user_id = current_user["id"]
 
-    deleted = manager.delete_budget(budget_id)
+    deleted = manager.delete_budget(
+        user_id,
+        budget_id
+    )
 
     if not deleted:
         raise HTTPException(

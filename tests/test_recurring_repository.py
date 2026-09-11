@@ -1,116 +1,206 @@
+import pytest
+
 from app.recurring.recurring_expense import RecurringExpense
 from app.recurring.recurring_repository import RecurringExpenseRepository
 
 
-def create_expense():
+TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
+OTHER_USER_ID = "00000000-0000-0000-0000-000000000002"
+
+
+def create_expense(
+    description="Netflix",
+    amount=649,
+    category="Entertainment",
+    frequency="Monthly",
+    start_date="2026-08-01",
+    end_date=None,
+    active=True,
+):
     return RecurringExpense(
         None,
-        "Netflix",
-        649,
-        "Entertainment",
-        "Monthly",
-        "2026-08"
+        description,
+        amount,
+        category,
+        frequency,
+        start_date,
+        end_date,
+        active,
     )
 
 
-def test_repository_add_and_get(tmp_path, monkeypatch):
+def setup_repository(tmp_path, monkeypatch):
+    monkeypatch.setenv("USE_POSTGRES", "false")
+
     database = tmp_path / "test.db"
 
     monkeypatch.setattr(
         "app.database.connection.DATABASE_PATH",
-        str(database)
+        str(database),
     )
 
-    repository = RecurringExpenseRepository()
+    return RecurringExpenseRepository()
 
-    expense = repository.add(create_expense())
+
+def test_repository_add_and_get(tmp_path, monkeypatch):
+    repository = setup_repository(tmp_path, monkeypatch)
+
+    expense = repository.add(
+        create_expense(),
+        user_id=TEST_USER_ID,
+    )
 
     assert expense.id is not None
 
-    result = repository.get(expense.id)
+    result = repository.get(
+        expense.id,
+        user_id=TEST_USER_ID,
+    )
 
     assert result is not None
     assert result.description == "Netflix"
     assert result.amount == 649
     assert result.category == "Entertainment"
     assert result.frequency == "Monthly"
+    assert result.start_date == "2026-08-01"
+    assert result.active is True
+
+
+def test_repository_add_with_end_date_and_inactive(tmp_path, monkeypatch):
+    repository = setup_repository(tmp_path, monkeypatch)
+
+    expense = repository.add(
+        create_expense(
+            description="Insurance",
+            amount=2500,
+            category="Insurance",
+            frequency="Yearly",
+            start_date="2026-08-01",
+            end_date="2027-08-01",
+            active=False,
+        ),
+        user_id=TEST_USER_ID,
+    )
+
+    result = repository.get(
+        expense.id,
+        user_id=TEST_USER_ID,
+    )
+
+    assert result is not None
+    assert result.end_date == "2027-08-01"
+    assert result.active is False
 
 
 def test_repository_get_missing(tmp_path, monkeypatch):
-    database = tmp_path / "test.db"
+    repository = setup_repository(tmp_path, monkeypatch)
 
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database)
-    )
-
-    repository = RecurringExpenseRepository()
-
-    assert repository.get(999) is None
+    assert repository.get(
+        999,
+        user_id=TEST_USER_ID,
+    ) is None
 
 
 def test_repository_get_all(tmp_path, monkeypatch):
-    database = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database)
-    )
-
-    repository = RecurringExpenseRepository()
-
-    repository.add(create_expense())
+    repository = setup_repository(tmp_path, monkeypatch)
 
     repository.add(
-        RecurringExpense(
-            None,
-            "Internet",
-            999,
-            "Utilities",
-            "Monthly",
-            "2026-08"
-        )
+        create_expense(),
+        user_id=TEST_USER_ID,
     )
 
-    expenses = repository.get_all()
+    repository.add(
+        create_expense(
+            description="Internet",
+            amount=999,
+            category="Utilities",
+        ),
+        user_id=TEST_USER_ID,
+    )
+
+    expenses = repository.get_all(
+        user_id=TEST_USER_ID,
+    )
 
     assert len(expenses) == 2
     assert expenses[0].description == "Netflix"
     assert expenses[1].description == "Internet"
 
 
-def test_repository_update(tmp_path, monkeypatch):
-    database = tmp_path / "test.db"
+def test_repository_get_all_only_returns_current_user(
+    tmp_path,
+    monkeypatch,
+):
+    repository = setup_repository(tmp_path, monkeypatch)
 
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database)
+    repository.add(
+        create_expense("Netflix"),
+        user_id=TEST_USER_ID,
     )
 
-    repository = RecurringExpenseRepository()
+    repository.add(
+        create_expense(
+            description="Spotify",
+            amount=199,
+        ),
+        user_id=OTHER_USER_ID,
+    )
 
-    expense = repository.add(create_expense())
+    expenses = repository.get_all(
+        user_id=TEST_USER_ID,
+    )
+
+    assert len(expenses) == 1
+    assert expenses[0].description == "Netflix"
+
+
+def test_repository_get_cannot_access_other_user(
+    tmp_path,
+    monkeypatch,
+):
+    repository = setup_repository(tmp_path, monkeypatch)
+
+    expense = repository.add(
+        create_expense(),
+        user_id=TEST_USER_ID,
+    )
+
+    assert repository.get(
+        expense.id,
+        user_id=OTHER_USER_ID,
+    ) is None
+
+
+def test_repository_update(tmp_path, monkeypatch):
+    repository = setup_repository(tmp_path, monkeypatch)
+
+    expense = repository.add(
+        create_expense(),
+        user_id=TEST_USER_ID,
+    )
 
     expense.description = "Netflix Premium"
     expense.amount = 799
+    expense.active = False
 
-    assert repository.update(expense) is True
+    assert repository.update(
+        expense,
+        user_id=TEST_USER_ID,
+    ) is True
 
-    result = repository.get(expense.id)
+    result = repository.get(
+        expense.id,
+        user_id=TEST_USER_ID,
+    )
 
+    assert result is not None
     assert result.description == "Netflix Premium"
     assert result.amount == 799
+    assert result.active is False
 
 
 def test_repository_update_missing(tmp_path, monkeypatch):
-    database = tmp_path / "test.db"
-
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database)
-    )
-
-    repository = RecurringExpenseRepository()
+    repository = setup_repository(tmp_path, monkeypatch)
 
     expense = RecurringExpense(
         999,
@@ -118,36 +208,89 @@ def test_repository_update_missing(tmp_path, monkeypatch):
         100,
         "Misc",
         "Monthly",
-        "2026-08"
+        "2026-08-01",
     )
 
-    assert repository.update(expense) is False
+    assert repository.update(
+        expense,
+        user_id=TEST_USER_ID,
+    ) is False
+
+
+def test_repository_update_cannot_modify_other_user(
+    tmp_path,
+    monkeypatch,
+):
+    repository = setup_repository(tmp_path, monkeypatch)
+
+    expense = repository.add(
+        create_expense(),
+        user_id=TEST_USER_ID,
+    )
+
+    expense.description = "Hacked Netflix"
+    expense.amount = 1
+
+    assert repository.update(
+        expense,
+        user_id=OTHER_USER_ID,
+    ) is False
+
+    result = repository.get(
+        expense.id,
+        user_id=TEST_USER_ID,
+    )
+
+    assert result is not None
+    assert result.description == "Netflix"
+    assert result.amount == 649
 
 
 def test_repository_delete(tmp_path, monkeypatch):
-    database = tmp_path / "test.db"
+    repository = setup_repository(tmp_path, monkeypatch)
 
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database)
+    expense = repository.add(
+        create_expense(),
+        user_id=TEST_USER_ID,
     )
 
-    repository = RecurringExpenseRepository()
+    assert repository.delete(
+        expense.id,
+        user_id=TEST_USER_ID,
+    ) is True
 
-    expense = repository.add(create_expense())
-
-    assert repository.delete(expense.id) is True
-    assert repository.get(expense.id) is None
+    assert repository.get(
+        expense.id,
+        user_id=TEST_USER_ID,
+    ) is None
 
 
 def test_repository_delete_missing(tmp_path, monkeypatch):
-    database = tmp_path / "test.db"
+    repository = setup_repository(tmp_path, monkeypatch)
 
-    monkeypatch.setattr(
-        "app.database.connection.DATABASE_PATH",
-        str(database)
+    assert repository.delete(
+        999,
+        user_id=TEST_USER_ID,
+    ) is False
+
+
+def test_repository_delete_cannot_delete_other_user(
+    tmp_path,
+    monkeypatch,
+):
+    repository = setup_repository(tmp_path, monkeypatch)
+
+    expense = repository.add(
+        create_expense(),
+        user_id=TEST_USER_ID,
     )
 
-    repository = RecurringExpenseRepository()
+    assert repository.delete(
+        expense.id,
+        user_id=OTHER_USER_ID,
+    ) is False
 
-    assert repository.delete(999) is False
+    assert repository.get(
+        expense.id,
+        user_id=TEST_USER_ID,
+    ) is not None

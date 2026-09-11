@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { ReactNode } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface NavItem {
   to: string;
@@ -64,11 +65,24 @@ const navItems: NavItem[] = [
   {
     to: '/settings',
     label: 'Settings',
-    icon: icon('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.15-1.5l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-2.6-1.5L13.8 2h-4l-.45 2.9a7.6 7.6 0 0 0-2.6 1.5l-2.5-1-2 3.5 2.1 1.6A7.4 7.4 0 0 0 4.2 12c0 .5.05 1 .15 1.5l-2.1 1.6 2 3.5 2.5-1c.75.65 1.63 1.16 2.6 1.5L9.8 22h4l.45-2.9c.97-.34 1.85-.85 2.6-1.5l2.5 1 2-3.5-2.1-1.6c.1-.5.15-1 .15-1.5Z'),
+    icon: icon('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.15-1.5l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-2.6-1.5L13.8 2h-4l-.45 2.9a7.6 7.6 0 0 0-2.6 1.5l-2.5-1-2 3.5 2.1 1.6A7.4 7.4 0 0 0 4.2 12c0 .5.05 1 .15 1.5l-2.1 1.6 2 3.5 2.5-1c.75.65 1.63 1.16 2.6 1.5L9.8 22h4l.45-2.9c.97-.34 1.85-.85 2.6-1.5l2.51 2-3.5-2.1-1.6c.1-.5.15-1 .15-1.5Z'),
   },
 ];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      onNavigate?.();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <div className="flex h-full w-64 flex-col bg-ink text-white">
       <div className="flex items-center gap-2.5 px-5 py-6">
@@ -109,6 +123,32 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </ul>
       </nav>
+
+      {/* Logout */}
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="focus-ring flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          >
+            <path
+              d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+
+          Logout
+        </button>
+      </div>
 
       <div className="border-t border-white/10 px-5 py-4 text-xs text-white/40">
         v1.0 · connected
